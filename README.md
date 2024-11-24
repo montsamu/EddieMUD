@@ -1,0 +1,2 @@
+# EddieMUD
+Python MUD Concept
