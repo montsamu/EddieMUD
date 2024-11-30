@@ -8,7 +8,7 @@ from telnetlib3 import create_server
 from telnetlib3.server import TelnetServer
 from telnetlib3.telopt import WONT, ECHO, SGA
 from . import commands
-from .objects import Area, Door, Room, Player
+from .objects import Area, Door, Room, Player, MobDefinition, ObjDefinition, Obj
 
 class Client:
     def __init__(self, world, reader, writer):
@@ -28,7 +28,8 @@ class Client:
             await self.send_line(f"Welcome, {name}.")
         # TODO: check name not already taken / password
         self.connected = True
-        self.player = Player(self, self.world.start_room, name)
+        # name, description, definition, inventory, equipment, stats, flags...
+        self.player = Player(self, self.world.start_room, name, "human fighter", self.world.mob_definitions[0], [Obj(self.world.obj_definitions[0])],{},{})
         for p in self.player.room.players:
             if p is not self.player:
                 await p.client.send_line(f"{self.player.name} appears out of the void.")
@@ -72,6 +73,10 @@ class World:
         self.clients = []
         self.commands_table = {}
         self.areas = []
+        human_def = MobDefinition("human")
+        bag_def = ObjDefinition("canvas bag")
+        self.mob_definitions = [human_def]
+        self.obj_definitions = [bag_def]
         self.start_room = None
         a = Area(self, "Chiiron", "The City of Chiiron.")
         fountain_square = Room(a, "Fountain Square")

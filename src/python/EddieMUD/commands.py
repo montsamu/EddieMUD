@@ -83,6 +83,10 @@ async def do_flee(client, target):
         await client.send_line(f"There is no exit in that direction!")
         return
 
+async def do_inventory(client, target):
+   for obj in client.player.inventory:
+       await client.send_line(f"{obj.definition.name}")
+
 @must_be_mobile
 @must_be_awake
 @must_be_standing

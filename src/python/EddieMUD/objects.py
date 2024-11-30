@@ -42,12 +42,44 @@ class Room:
         self.actions = []
         self.resets = []
 
+class MobDefinition:
+    def __init__(self, name):
+        self.name = name
+        self.flags = {}
+
+class Mob:
+    def __init__(self, definition, name=None, **flags):
+        self.definition = definition
+        self.name = name
+        self.flags = dict(definition.flags)
+        for k,v in flags.items():
+            self.flags[k] = v
+
+class ObjDefinition:
+    def __init__(self, name):
+        self.name = name
+        self.flags = {}
+
+class Obj:
+    def __init__(self, definition, name=None, **flags):
+        self.definition = definition
+        self.name = name
+        self.flags = dict(definition.flags)
+        for k,v in flags.items():
+            self.flags[k] = v
+
 class Player:
-    def __init__(self, client, room, name):
+    def __init__(self, client, room, name, description, definition, inventory, equipment, stats, **flags):
         self.client = client
         self.room = room
         room.players.append(self)
         self.name = name
+        self.description = description
+        self.definition = definition
+        self.inventory = list(inventory)
+        self.equipment = dict(equipment)
+        self.stats = dict(stats)
+        self.flags = dict(flags)
     def is_fighting(self):
         return False
     def is_mobile(self):
