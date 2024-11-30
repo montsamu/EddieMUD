@@ -10,6 +10,9 @@ Setup:
 python -m venv venv
 . ./venv/bin/activate
 pip install -r requirements.txt
+
+For local testing:
+pip install -r requirementsTest.txt
 ```
 
 Run:
@@ -22,6 +25,6 @@ Testing:
 Basic unit testing will be created by Eddie, however feel free to install pytest and  
 create some tests.
 
-Current version ins use 8.3.3
+Current Pytest version in use 8.3.3
 
 https://docs.pytest.org/en/stable/getting-started.html#getstarted
