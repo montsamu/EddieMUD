@@ -11,18 +11,27 @@ from . import commands
 from .objects import Area, Door, Room, Player
 
 class Client:
-    world = None
-    connected = False
-    reader = None
-    writer = None
-    player = None
     def __init__(self, world, reader, writer):
         self.world = world
         self.reader = reader
         self.writer = writer
+        self.connected = False
+        self.player = None
     async def loop(self):
+        self.writer.write(f"\rName: ")
+        await self.writer.drain()
+        name = await self.reader.readline()
+        name = name.strip()
+        if not name:
+            await self.send_line("No name entered. Goodbye.")
+        else:
+            await self.send_line(f"Welcome, {name}.")
+        # TODO: check name not already taken / password
         self.connected = True
-        self.player = Player(self, self.world.start_room, "Phule")
+        self.player = Player(self, self.world.start_room, name)
+        for p in self.player.room.players:
+            if p is not self.player:
+                await p.client.send_line(f"{self.player.name} appears out of the void.")
         await commands.do_look(self, "")
         while self.connected:
             msg = await self.reader.readline()
@@ -53,14 +62,13 @@ class Client:
         await self.writer.drain()
 
 class World:
-    shutdown = False
-    server = None
-    clients = []
-    commands_table = {}
-    areas = []
-    start_room = None
-
     def __init__(self):
+        self.shutdown = False
+        self.server = None
+        self.clients = []
+        self.commands_table = {}
+        self.areas = []
+        self.start_room = None
         a = Area(self, "Chiiron", "The City of Chiiron.")
         fountain_square = Room(a, "Fountain Square")
         library = Room(a, "The Library")

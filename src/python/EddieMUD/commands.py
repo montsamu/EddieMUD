@@ -62,6 +62,9 @@ async def do_look(client, target):
         if isinstance(obj, Room):
             await client.send_line(f"{obj.name}")
             await client.send_line(f"{obj.description}")
+            for p in obj.players:
+                if p is not client.player:
+                    await client.send_line(f"{p.name} is here.")
         else:
             print(f"Unknown obj class: {obj.__class__}")
     else:
@@ -109,7 +112,7 @@ async def do_move(client, target):
         if p is client.player:
             await client.send_line(f"You leave {normalized_direction}.")
         else:
-            await p.client.send_line(f"{client.player} leaves {normalized_direction}.")
+            await p.client.send_line(f"{client.player.name} leaves {normalized_direction}.")
 
     door.room_start.players.remove(client.player)
     client.player.room = door.room_end
@@ -120,5 +123,5 @@ async def do_move(client, target):
             await do_look(client,"")
         else:
             opposite_direction = "north" if normalized_direction == "south" else "south" if normalized_direction == "north" else "east" if normalized_diretion == "west" else "west" if normalized_direction == "east" else "down" if normalized_direction == "up" else "up"
-            oppossite_directional = f"the {opposite_direction}" if opposite_direction not in ["up","down"] else "above" if opposite_direction == "up" else "below"
-            await p.client.send_line("f{client.player} arrives from {opposite_directional}.")
+            opposite_directional = f"the {opposite_direction}" if opposite_direction not in ["up","down"] else "above" if opposite_direction == "up" else "below"
+            await p.client.send_line(f"{client.player.name} arrives from {opposite_directional}.")
