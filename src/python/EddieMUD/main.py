@@ -29,7 +29,7 @@ class Client:
         # TODO: check name not already taken / password
         self.connected = True
         # name, description, definition, inventory, equipment, stats, flags...
-        self.player = Player(self, self.world.start_room, name, "human fighter", self.world.mob_definitions[0], [Obj(self.world.obj_definitions[0])],{},{})
+        self.player = Player(self, self.world.start_room, name, "human fighter", self.world.mob_definitions[0], [Obj(self.world.obj_definitions[0])],{'right_hand':Obj(self.world.obj_definitions[1])},{})
         for p in self.player.room.players:
             if p is not self.player:
                 await p.client.send_line(f"{self.player.name} appears out of the void.")
@@ -75,8 +75,9 @@ class World:
         self.areas = []
         human_def = MobDefinition("human")
         bag_def = ObjDefinition("canvas bag")
+        ls_def = ObjDefinition("iron longsword")
         self.mob_definitions = [human_def]
-        self.obj_definitions = [bag_def]
+        self.obj_definitions = [bag_def, ls_def]
         self.start_room = None
         a = Area(self, "Chiiron", "The City of Chiiron.")
         fountain_square = Room(a, "Fountain Square")

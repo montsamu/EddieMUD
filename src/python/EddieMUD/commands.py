@@ -87,6 +87,13 @@ async def do_inventory(client, target):
    for obj in client.player.inventory:
        await client.send_line(f"{obj.definition.name}")
 
+async def do_equip(client, target):
+    if not target:
+        for k,v in client.player.equipment.items():
+            await client.send_line(f"{k}: {v.definition.name}")
+    else:
+        await client.send_line("Equipping items is not yet implemented.")
+
 @must_be_mobile
 @must_be_awake
 @must_be_standing
