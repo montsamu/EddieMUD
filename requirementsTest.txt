@@ -1,2 +1,4 @@
+pytest 
 telnetlib3
+python-dotenv
 mysql-connector-python
