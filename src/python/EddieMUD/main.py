@@ -37,6 +37,10 @@ class Client:
             msg = await self.reader.readline()
             if msg == "":
                 self.connected = False
+                self.player.room.players.remove(self.player)
+                for p in self.player.room.players:
+                    if p is not self.player:
+                        await p.client.send_line(f"{self.player.name} disappears though you did not see him leave.")
                 self.reader.feed_eof()
                 self.writer.close()
                 return
