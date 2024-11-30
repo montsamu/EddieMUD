@@ -19,7 +19,6 @@ class Door:
         self.room_start = room_start
         self.room_end = room_end
         for k,v in flags.items():
-            print(k,v)
             self.flags[k] = v
         # self.closed = closed
         # self.closable = closable
@@ -35,7 +34,6 @@ class Room:
         self.description = description
         self.flags = {}
         for k, v in flags.items():
-            print(k,v)
             self.flags[k] = v
         self.players = []
         self.mobs = []

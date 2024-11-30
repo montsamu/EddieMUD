@@ -23,6 +23,7 @@ class Client:
     async def loop(self):
         self.connected = True
         self.player = Player(self, self.world.start_room, "Phule")
+        await commands.do_look(self, "")
         while self.connected:
             msg = await self.reader.readline()
             if msg == "":
