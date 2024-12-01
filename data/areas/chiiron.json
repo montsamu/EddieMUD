@@ -1,0 +1,13 @@
+{
+    "id": 1,
+    "name":"City of Chiiron",
+    "rooms": [
+        {"id": 1, "name": "Fountain Square"},
+        {"id": 2, "name": "Temple"},
+        {"id": 3, "name": "Bell Tower"}
+    ],
+    "doors": [
+        {"from": 1, "to": 2, "direction": "s"},
+        {"from": 2, "to": 1, "direction": "n"}
+    ]
+}
