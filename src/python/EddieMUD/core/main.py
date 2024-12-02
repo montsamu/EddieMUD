@@ -52,7 +52,7 @@ class Client:
         elif msg.startswith("'"):
             msg = "say " + msg[1:]
         words = msg.split(" ", 1)
-        cmd = words[0]
+        cmd = words[0].strip()
         target = words[1].strip() if len(words) > 1 else ""
         c = self.main.commands_table.get(cmd)
         if c is None:

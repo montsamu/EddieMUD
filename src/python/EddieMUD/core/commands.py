@@ -1,5 +1,6 @@
 
 import random
+import shlex
 from functools import wraps
 
 from .objects import Room
@@ -32,7 +33,7 @@ def must_be_mobile(func):
     @wraps(func)
     async def wrapper(client, target):
         if not client.player.is_mobile():
-            return await client.send_link(f"You are unable to move.")
+            return await client.send_line(f"You are unable to move.")
         return await func(client, target)
     return wrapper
 
@@ -40,7 +41,7 @@ def must_be_awake_if_targeted(func):
     @wraps(func)
     async def wrapper(client, target):
         if target and not client.player.is_awake():
-            return await client.send_link(f"You must be awake to do that.")
+            return await client.send_line(f"You must be awake to do that.")
         return await func(client, target)
     return wrapper
 
@@ -48,7 +49,7 @@ def must_be_awake(func):
     @wraps(func)
     async def wrapper(client, target):
         if not client.player.is_awake():
-            return await client.send_link(f"You must be awake to do that.")
+            return await client.send_line(f"You must be awake to do that.")
         return await func(client, target)
     return wrapper
 
@@ -56,9 +57,9 @@ def util_resolve_target(client, target):
     return None
 
 @must_be_awake
-async def do_say(client, msg):
-    if msg:
-        await client.main.ncast(client, f"You said: {msg}", f"{client.player.name} said: {msg}")
+async def do_say(client, target):
+    if target:
+        await client.main.ncast(client, f"You said: {target}", f"{client.player.name} said: {target}")
     else:
         await client.send_line("Say what?")
 
