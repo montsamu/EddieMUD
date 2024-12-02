@@ -5,8 +5,9 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: python/setup-python@v3
-      - run: |
+    - uses: actions/checkout@v3
+    - uses: python/setup-python@v3
+    - name: install test requirements and run pylint
+      run: |
         pip install -r test-requirements.txt
         pylint src/python/EddieMUD
