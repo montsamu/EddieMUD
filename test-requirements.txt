@@ -2,3 +2,4 @@ pytest
 telnetlib3
 python-dotenv
 duckdb
+pylint
