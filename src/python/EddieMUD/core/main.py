@@ -7,6 +7,8 @@ from telnetlib3.telopt import WONT, ECHO, SGA
 from . import commands
 from .objects import Area, Door, Room, Player, MobDefinition, ObjDefinition, Obj, World
 import json5
+import glob
+import duckdb
 
 class Client:
     def __init__(self, main, reader, writer):
@@ -27,7 +29,7 @@ class Client:
         # TODO: check name not already taken / password
         self.connected = True
         # name, description, definition, inventory, equipment, stats, flags...
-        self.player = Player(self, self.main.start_room, name, "human fighter", self.main.mob_definitions[0], [Obj(self.main.obj_definitions[0])],{'right_hand':Obj(self.main.obj_definitions[1])},{})
+        self.player = Player(self, self.main.start_room, name, "human fighter", self.main.mob_definitions[0], [Obj(next((o for o in self.main.obj_definitions if o.name == 'small canvas bag')))],{'right_hand':Obj(next((o for o in self.main.obj_definitions if o.name == 'iron longsword')))},{})
         for p in self.player.room.players:
             if p is not self.player:
                 await p.client.send_line(f"{self.player.name} appears out of the void.")
@@ -72,24 +74,36 @@ class Main:
         self.clients = []
         self.commands_table = {}
         self.world = World()
-        human_def = MobDefinition("human")
-        bag_def = ObjDefinition("canvas bag")
-        ls_def = ObjDefinition("iron longsword")
-        self.mob_definitions = [human_def]
-        self.obj_definitions = [bag_def, ls_def]
 
-        # TODO: loop on all json5 files in areas dir
-        area_data = json5.load(open('data/areas/chiiron.json5'))
-        area = Area(self.world, area_data["id"], area_data['name'], area_data.get('description','No description.'))
-        door_data = []
-        for r in area_data.get("rooms", []):
-            room = Room(area, r["id"], r["name"], **r.get("flags", {}))
-            if "doors" in r:
-                door_data.append({'room':room, 'doors':r["doors"]})
-        for d in door_data:
-            for k, v in d['doors'].items():
-                d['room'].doors[k] = Door(d['room'], next((r for r in area.rooms if r.id == v["to"])), **v.get("flags",{}))
-        self.start_room = area.rooms[0]
+        self.obj_definitions = []
+        obj_definitions_q = duckdb.read_json('./data/objects/*.json')
+        for obj_def_tuple in obj_definitions_q.fetchall():
+            print("Loading object definition:", obj_def_tuple)
+            obj_def = ObjDefinition(obj_def_tuple[0], obj_def_tuple[1])
+            self.obj_definitions.append(obj_def)
+        for obj_definition in self.obj_definitions:
+            print("loaded:", obj_definition.name)
+        self.mob_definitions = []
+        mob_definitions_q = duckdb.read_json('./data/mobs/*.json')
+        for mob_def_tuple in mob_definitions_q.fetchall():
+            print("Loading mob definition:", mob_def_tuple)
+            mob_def = MobDefinition(mob_def_tuple[0], mob_def_tuple[1])
+            self.mob_definitions.append(mob_def)
+
+        area_paths = glob.glob("./data/areas/*.json5")
+        for area_path in area_paths:
+            print("Loading area definition:", area_path)
+            area_data = json5.load(open(area_path))
+            area = Area(self.world, area_data["id"], area_data['name'], area_data.get('description','No description.'))
+            door_data = []
+            for r in area_data.get("rooms", []):
+                room = Room(area, r["id"], r["name"], **r.get("flags", {}))
+                if "doors" in r:
+                    door_data.append({'room':room, 'doors':r["doors"]})
+            for d in door_data:
+                for k, v in d['doors'].items():
+                    d['room'].doors[k] = Door(d['room'], next((r for r in area.rooms if r.id == v["to"])), **v.get("flags",{}))
+        self.start_room = self.world.areas[0].rooms[0]
         # self.limbo
 
         functions = inspect.getmembers(commands, inspect.iscoroutinefunction)

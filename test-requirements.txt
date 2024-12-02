@@ -3,5 +3,5 @@ telnetlib3
 python-dotenv
 pylint
 json5
-# duckdb
-# fsspec  # json support for duckdb
+duckdb
+fsspec  # json support for duckdb

@@ -52,7 +52,8 @@ class Room:
         self.resets = []
 
 class MobDefinition:
-    def __init__(self, name):
+    def __init__(self, id, name):
+        self.id = id
         self.name = name
         self.flags = {}
 
@@ -61,20 +62,22 @@ class Mob:
         self.definition = definition
         self.room = room
         room.mobs.append(self)
-        self.name = name
+        self.name = name if name else definition.name
         self.flags = dict(definition.flags)
         for k,v in flags.items():
             self.flags[k] = v
 
 class ObjDefinition:
-    def __init__(self, name):
+    def __init__(self, id, name):
+        self.id = id
         self.name = name
+        print(self.name)
         self.flags = {}
 
 class Obj:
     def __init__(self, definition, name=None, **flags):
         self.definition = definition
-        self.name = name
+        self.name = name if name else definition.name
         self.flags = dict(definition.flags)
         for k,v in flags.items():
             self.flags[k] = v
