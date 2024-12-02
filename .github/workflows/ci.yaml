@@ -1,10 +1,11 @@
 on: [push]
 
-ci:
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v3
-    - uses: python/setup-python@v3
-    - run: |
-      pip install -r test-requirements.txt
-      pylint src/python/EddieMUD
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: python/setup-python@v3
+      - run: |
+        pip install -r test-requirements.txt
+        pylint src/python/EddieMUD

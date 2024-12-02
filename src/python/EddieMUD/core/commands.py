@@ -36,6 +36,14 @@ def must_be_mobile(func):
         return await func(client, target)
     return wrapper
 
+def must_be_awake_if_targeted(funct):
+    @wraps(func)
+    async def wrapper(client, target):
+        if target and not client.player.is_awake():
+            return await client.send_link(f"You must be awake to do that.")
+        return await func(client, target)
+    return wrapper
+
 def must_be_awake(func):
     @wraps(func)
     async def wrapper(client, target):
@@ -87,12 +95,20 @@ async def do_inventory(client, target):
    for obj in client.player.inventory:
        await client.send_line(f"{obj.definition.name}")
 
+@must_be_awake_if_targeted
 async def do_equip(client, target):
     if not target:
         for k,v in client.player.equipment.items():
             await client.send_line(f"{k}: {v.definition.name}")
     else:
         await client.send_line("Equipping items is not yet implemented.")
+
+@must_be_awake
+async def do_unequip(client, target):
+    if not target:
+        await client.send_line("What do you want to unequip?")
+        return
+    await client.send_line("Unequipping items is not yet implemented.")
 
 @must_be_mobile
 @must_be_awake
