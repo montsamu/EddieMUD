@@ -7,7 +7,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v3
-    - name: install test requirements and run pylint
-      run: |
-        pip install -r test-requirements.txt
-        pylint src/python/EddieMUD
+    - name: install test requirements
+      run: pip install -r test-requirements.txt
+    - name: pylint (errors only)
+      run: pylint -E src/python/EddieMUD

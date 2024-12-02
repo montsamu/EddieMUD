@@ -36,7 +36,7 @@ def must_be_mobile(func):
         return await func(client, target)
     return wrapper
 
-def must_be_awake_if_targeted(funct):
+def must_be_awake_if_targeted(func):
     @wraps(func)
     async def wrapper(client, target):
         if target and not client.player.is_awake():
@@ -128,7 +128,7 @@ async def do_move(client, target):
     normalized_directional = f"to the {normalized_direction}" if normalized_direction not in ["up","down"] else "above" if normalized_direction == "up" else "below"
     door = client.player.room.doors.get(target,None)
     if not door:
-        await client.send_line(f"You see no exit {noramlized_directional}.")
+        await client.send_line(f"You see no exit {normalized_directional}.")
         return
 
     if door.is_closed():
@@ -149,6 +149,6 @@ async def do_move(client, target):
         if p is client.player:
             await do_look(client,"")
         else:
-            opposite_direction = "north" if normalized_direction == "south" else "south" if normalized_direction == "north" else "east" if normalized_diretion == "west" else "west" if normalized_direction == "east" else "down" if normalized_direction == "up" else "up"
+            opposite_direction = "north" if normalized_direction == "south" else "south" if normalized_direction == "north" else "east" if normalized_direction == "west" else "west" if normalized_direction == "east" else "down" if normalized_direction == "up" else "up"
             opposite_directional = f"the {opposite_direction}" if opposite_direction not in ["up","down"] else "above" if opposite_direction == "up" else "below"
             await p.client.send_line(f"{client.player.name} arrives from {opposite_directional}.")

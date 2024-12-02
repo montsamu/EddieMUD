@@ -1,11 +1,8 @@
 """A simple telnetlib3 server"""
 
 import asyncio
-from functools import partial
-import json
 import inspect
 from telnetlib3 import create_server
-from telnetlib3.server import TelnetServer
 from telnetlib3.telopt import WONT, ECHO, SGA
 from . import commands
 from .objects import Area, Door, Room, Player, MobDefinition, ObjDefinition, Obj
@@ -128,11 +125,11 @@ class World:
         asyncio.get_event_loop().run_until_complete(self.server.wait_closed())
 
     async def broadcast(self, msg):
-        for c in [c for c in self.clients if c.connected == True]:
+        for c in [c for c in self.clients if c.connected is True]:
             await c.send_line(msg)
 
     async def ncast(self, client, client_msg, others_msg):
-        for c in [c for c in self.clients if c.connected == True and c is not client]:
+        for c in [c for c in self.clients if c.connected is True and c is not client]:
             await c.send_line(others_msg)
         await client.send_line(client_msg)
 
