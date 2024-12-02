@@ -6,6 +6,7 @@ from telnetlib3 import create_server
 from telnetlib3.telopt import WONT, ECHO, SGA
 from . import commands
 from .objects import Area, Door, Room, Player, MobDefinition, ObjDefinition, Obj
+import json5
 
 class Client:
     def __init__(self, world, reader, writer):
@@ -75,33 +76,19 @@ class World:
         ls_def = ObjDefinition("iron longsword")
         self.mob_definitions = [human_def]
         self.obj_definitions = [bag_def, ls_def]
-        self.start_room = None
-        a = Area(self, "Chiiron", "The City of Chiiron.")
-        fountain_square = Room(a, "Fountain Square")
-        library = Room(a, "The Library")
-        temple = Room(a, "The Temple")
-        east_gate = Room(a, "The East Gate")
-        outside_east_gate = Room(a, "Outside the East Gate")
-        west_gate = Room(a, "The West Gate")
-        outside_west_gate = Room(a, "Outside the West Gate")
-        bell_tower = Room(a, "Bell Tower", safe=True)
-        archives = Room(a, "Archive Room")
-        fountain_square.doors["n"] = Door(fountain_square, library)
-        library.doors["s"] = Door(library, fountain_square)
-        library.doors["d"] = Door(library, archives)
-        archives.doors["u"] = Door(archives, library)
-        fountain_square.doors["s"] = Door(fountain_square, temple)
-        temple.doors["n"] = Door(temple, fountain_square)
-        temple.doors["u"] = Door(temple, bell_tower)
-        bell_tower.doors["d"] = Door(bell_tower, temple)
-        fountain_square.doors["e"] = Door(fountain_square, east_gate)
-        east_gate.doors["w"] = Door(east_gate, fountain_square)
-        east_gate.doors["e"] = Door(east_gate, outside_east_gate, closed=True)
-        fountain_square.doors["w"] = Door(fountain_square, west_gate)
-        west_gate.doors["e"] = Door(west_gate, fountain_square)
-        west_gate.doors["w"] = Door(west_gate, outside_west_gate, closed=True)
 
-        self.start_room = fountain_square
+        # TODO: loop on all json5 files in areas dir
+        area_data = json5.load(open('data/areas/chiiron.json5'))
+        area = Area(self, area_data["id"], area_data['name'], area_data.get('description','No description.'))
+        door_data = []
+        for r in area_data.get("rooms", []):
+            room = Room(area, r["id"], r["name"], **r.get("flags", {}))
+            if "doors" in r:
+                door_data.append({'room':room, 'doors':r["doors"]})
+        for d in door_data:
+            for k, v in d['doors'].items():
+                d['room'].doors[k] = Door(d['room'], next((r for r in area.rooms if r.id == v["to"])), **v.get("flags",{}))
+        self.start_room = area.rooms[0]
         # self.limbo
 
         functions = inspect.getmembers(commands, inspect.iscoroutinefunction)

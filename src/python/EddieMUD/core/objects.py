@@ -1,8 +1,9 @@
 
 class Area:
-    def __init__(self, world, name, description, **flags):
+    def __init__(self, world, id, name, description=None, **flags):
         self.world = world
         self.world.areas.append(self)
+        self.id = id
         self.name = name
         self.description = description
         self.flags = {"open":True}
@@ -27,9 +28,10 @@ class Door:
         return self.flags["closed"]
 
 class Room:
-    def __init__(self, area, name, description=None, **flags):
+    def __init__(self, area, id, name, description=None, **flags):
         self.area = area
         self.area.rooms.append(self)
+        self.id = id
         self.name = name
         self.description = description
         self.flags = {}
