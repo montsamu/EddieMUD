@@ -16,7 +16,7 @@ def room(area):
 
 @pytest.fixture
 def mob_definition():
-    return MobDefinition('mob1')
+    return MobDefinition(1, 'mob1')
 
 @pytest.fixture
 def mob(room, mob_definition):
