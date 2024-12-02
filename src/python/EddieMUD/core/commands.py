@@ -58,7 +58,7 @@ def util_resolve_target(client, target):
 @must_be_awake
 async def do_say(client, msg):
     if msg:
-        await client.world.ncast(client, f"You said: {msg}", f"{client.player.name} said: {msg}")
+        await client.main.ncast(client, f"You said: {msg}", f"{client.player.name} said: {msg}")
     else:
         await client.send_line("Say what?")
 

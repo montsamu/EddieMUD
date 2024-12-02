@@ -1,4 +1,11 @@
 
+class World:
+    def __init__(self, **flags):
+        self.areas = []
+        self.flags = {}
+        for k,v in flags.items():
+            self.flags[k] = v
+
 class Area:
     def __init__(self, world, id, name, description=None, **flags):
         self.world = world
@@ -50,8 +57,10 @@ class MobDefinition:
         self.flags = {}
 
 class Mob:
-    def __init__(self, definition, name=None, **flags):
+    def __init__(self, room, definition, name=None, **flags):
         self.definition = definition
+        self.room = room
+        room.mobs.append(self)
         self.name = name
         self.flags = dict(definition.flags)
         for k,v in flags.items():

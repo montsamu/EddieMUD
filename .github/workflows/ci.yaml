@@ -11,3 +11,5 @@ jobs:
       run: pip install -r test-requirements.txt
     - name: pylint (errors only)
       run: pylint -E src/python/EddieMUD
+    - name: pytest
+      run: PYTHONPATH=src/python pytest -s src/test
