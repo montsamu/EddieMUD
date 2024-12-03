@@ -3,8 +3,7 @@ class World:
     def __init__(self, **flags):
         self.areas = []
         self.flags = {}
-        for k,v in flags.items():
-            self.flags[k] = v
+        self.flags.update(flags)
 
 class Area:
     def __init__(self, world, id, name, description=None, **flags):
@@ -14,8 +13,7 @@ class Area:
         self.name = name
         self.description = description
         self.flags = {"open":True}
-        for k,v in flags.items():
-            self.flags[k] = v
+        self.flags.update(flags)
         self.rooms = []
 
 class Door:
@@ -26,8 +24,7 @@ class Door:
         self.flags = {"closed":False, "closable":False, "openable":False}
         self.room_start = room_start
         self.room_end = room_end
-        for k,v in flags.items():
-            self.flags[k] = v
+        self.flags.update(flags)
         # self.closed = closed
         # self.closable = closable
         # self.openable = openable
@@ -64,8 +61,7 @@ class Mob:
         room.mobs.append(self)
         self.name = name if name else definition.name
         self.flags = dict(definition.flags)
-        for k,v in flags.items():
-            self.flags[k] = v
+        self.flags.update(flags)
 
 class ObjDefinition:
     def __init__(self, id, name):
@@ -79,8 +75,7 @@ class Obj:
         self.definition = definition
         self.name = name if name else definition.name
         self.flags = dict(definition.flags)
-        for k,v in flags.items():
-            self.flags[k] = v
+        self.flags.update(flags)
 
 class Player:
     def __init__(self, client, room, name, description, definition, inventory, equipment, stats, **flags):
