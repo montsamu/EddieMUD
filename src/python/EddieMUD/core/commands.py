@@ -111,9 +111,9 @@ async def do_unequip(client, target):
         return
     await client.send_line("Unequipping items is not yet implemented.")
 
-@must_be_mobile
 @must_be_awake
 @must_be_standing
+@must_be_mobile
 @must_not_be_in_combat
 async def do_move(client, target):
     if not target:

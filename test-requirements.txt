@@ -1,4 +1,6 @@
 pytest 
+pytest-asyncio
+pytest-mock
 telnetlib3
 python-dotenv
 pylint

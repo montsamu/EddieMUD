@@ -20,12 +20,12 @@ def server():
     yield p
     p.kill()
 
-async def _test_listening(loop, server):
-    reader, writer = await open_connection('localhost', 6023)
-    msg = await reader.read(8)
-    assert msg == "\rName: "
-
 def test_listening(loop, server):
+    async def _test_listening(loop, server):
+        reader, writer = await open_connection('localhost', 6023)
+        msg = await reader.read(8)
+        assert msg == "\rName: "
+
     loop.run_until_complete(_test_listening(loop, server))
     # reader, writer = loop.run_until_complete(open_connection('localhost', 6023))
     # msg = loop.run_until_complete(reader.read(8))
