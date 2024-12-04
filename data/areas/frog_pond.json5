@@ -1,0 +1,11 @@
+{
+    id: 2,
+    name: "The Frog Pond",
+    rooms: [
+        {id: 1, name: "Edge of the Pond",
+         doors: {
+           w: {to: 6, in: 1},
+         }},
+    ],
+}
+

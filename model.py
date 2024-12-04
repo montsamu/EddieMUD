@@ -61,7 +61,7 @@ class SkillCategory(OnlineEditable, db.Entity):
     skills = Set('Skill') # non lazy is ok for finite list
 
 class Skill(OnlineEditable, db.Entity):
-    name = Required(str, unique=True)
+    name = PrimaryKey(str)
     category = Required('SkillCategory')
     sets = Set('SkillSetItem', lazy=True)
     description = Optional(str)
@@ -71,24 +71,24 @@ class Skill(OnlineEditable, db.Entity):
     base_speed = Required(int, default=100)
 
 # TODO: would some cats be evil, or things like fire/cold? or: arcane/demonic/angelic/spiritual?
-class SpellCategory(OnlineEditable, db.Entity):
-    name = Required(str, unique=True)
-    description = Optional(str)
-    spells = Set('Spell')
+# class SpellCategory(OnlineEditable, db.Entity):
+#     name = Required(str, unique=True)
+#     description = Optional(str)
+#     spells = Set('Spell')
 
 # TODO: target type? program? targets?
 class Spell(OnlineEditable, db.Entity):
-    name = Required(str, unique=True)
+    name = PrimaryKey(str)
     books = Set('SpellBookItem', lazy=True)
     description = Optional(str)
-    category = Required(SpellCategory)
+    # category = Required(SpellCategory)
     effects = Set('MobEffect')
-    base_mana_cost = Required(int)
+    init_mana_cost = Required(int, default=0)
     base_speed = Required(int, default=0)
     base_mana_leech = Required(int, default=0)
     base_duration = Required(int, default=0)
-    cast_steps = Required(StrArray) # TODO check these are valid step refs, add helper functions
-    prep_steps = Required(StrArray)
+    cast_steps = Required(StrArray, default=[]) # TODO check these are valid step refs, add helper functions
+    prep_steps = Required(StrArray, default=[])
 
 # TODO: calculate how long it should take per-player (attrs, skills)
 # TODO: some impact to durability? of non-consumable reagents?
@@ -271,6 +271,7 @@ class RoomFlag(OnlineEditable, db.Entity):
     default = Required(bool, default=False)
 
 class RoomDefinition(OnlineEditable, db.Entity):
+    id = Required(int)
     adef = Required(AreaDefinition)
     room = Optional('Room') # , unique=True) # CAUSED ERROR!
     name = Required(str) # todo: auto strip?
@@ -279,6 +280,7 @@ class RoomDefinition(OnlineEditable, db.Entity):
     rflagdefs = Required(Json, default={}) # todo: check insert/update for rflag existence
     oresets = Set('ObjectReset') # todo: json?
     mresets = Set('MobReset') # todo: json?
+    PrimaryKey(adef, id)
 
 class Room(ContainerBase):
     area = Required('Area')
@@ -290,12 +292,15 @@ class Room(ContainerBase):
 
 class Direction(OnlineEditable, db.Entity):
     name = PrimaryKey(str)
-    # TODO: opposite
+    long_name = Required(str, unique=True)
+    ddefs_leading = Set('DoorDefinition', lazy=True)
+    doors_leading = Set('Door', lazy=True)
+    # TODO: opposite?
 
 class DoorDefinition(OnlineEditable, db.Entity):
     room = Required('RoomDefinition')
     door = Optional('Door') # , unique=True) # CAUSED ERROR
-    direction = Required(str) # Direction todo: check insert/update for existence
+    direction = Required(Direction) # Direction todo: check insert/update for existence
     destination = Required('RoomDefinition')
     dflagdefs = Required(Json, default={}) # todo: check insert/update for dflag existence
     key = Optional('ObjectDefinition')
@@ -304,7 +309,7 @@ class DoorDefinition(OnlineEditable, db.Entity):
 class Door(db.Entity):
     ddef = Required('DoorDefinition')
     room = Required('Room')
-    direction = Required(str) # Direction
+    direction = Required(Direction)
     destination = Required('Room')
     dflags = Required(Json, default={})
     composite_key(room, direction)
@@ -312,45 +317,4 @@ class Door(db.Entity):
 class DoorFlag(OnlineEditable, db.Entity):
     name = PrimaryKey(str) # reset_closed, is_closed,...
     default = Required(bool, default=False)
-
-import json
-import glob
-from pony.orm import db_session, set_sql_debug
-
-if __name__=="__main__":
-    db.bind('sqlite', ':memory:', create_db=True)
-    db.generate_mapping(create_tables=True)
-
-    set_sql_debug(True)
-
-    with db_session:
-        for dtype in [MobMorphology, MobFlag, MobEffect, RoomFlag, DoorFlag, Direction]:
-            print(f"Loading: {dtype.__qualname__}")
-            dtype_json_files = glob.glob(f'data/{dtype.__qualname__}/*.json')
-            for dtype_json_file in dtype_json_files:
-                with open(dtype_json_file) as f:
-                    print(f"Loading: {dtype_json_file}")
-                    dtype_json = json.load(f)
-                    print(dtype_json['name'])
-                    _dtype = dtype(**dtype_json)
-                    print(f"Loaded: {_dtype.name}")
-
-#    for _morph in ["humanoid", "insectoid", "equine", "avian"]:
-#        _m = MobMorphology(name=_morph)
-#
-#    for _mbf in ["sentinel","assist_group","assist_group_leader","assist_leader","assist_followers"]:
-#        _mbflag = MobFlag(name=_mbf)
-#    for _mef in ["fire_shield","detect_evil","armor","bless","regeneration"]:
-#        _meflag = MobEffect(name=_mef)
-#
-#    for _rfname in ["safe","pkill"]:
-#        _rflag = RoomFlag(name=_rfname)
-#
-#    for _flag in ["reset_closed", "is_closed", "is_openable", "is_closable", "is_locked", "is_pickable", "reset_locked"]:
-#        _df = DoorFlag(name=_flag)
-#
-#    for _dname in ["n","e","u","s","w","d"]:
-#        _direction = Direction(name=_dname)
-
-    db._in_init_ = False
 

@@ -27,6 +27,7 @@
         {id: 5, name: "Outside the East Gate",
          doors: {
            w: {to: 4, flags: {closed: true}},
+           e: {to: 1, in: 2},
          }},
         {id: 6, name: "The West Gate",
          doors: {
