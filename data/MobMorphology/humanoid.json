@@ -16,7 +16,8 @@
 					"nostrils": {
 						"left_nostril": {},
 						"right_nostril": {}
-					},
+					}
+				},
 				"mouth": {
 					"lips": {
 						"upper_lip": {},
@@ -120,7 +121,7 @@
 			},
 			"right_ankle": {},
 			"right_foot": {
-                        	"right_sole": {},
+       	                	"right_sole": {},
 				"right_talus": {},
 				"right_heel": {},
 				"right_toes": {
@@ -145,7 +146,7 @@
 			},
 			"left_ankle": {},
 			"left_foot": {
-                        	"left_sole": {},
+       	                	"left_sole": {},
 				"left_talus": {},
 				"left_heel": {},
 				"left_toes": {
