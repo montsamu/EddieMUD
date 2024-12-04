@@ -1,0 +1,14 @@
+{
+	"name": "elfkin",
+	"base": "humanoid",
+	"delta": {
+		"add": {
+			"head.ears.left_ear": {
+				"left_ear_tip": {}
+			},
+			"head.ears.right_ear": {
+				"right_ear_tip": {}
+			}
+		}
+	}
+}
