@@ -12,11 +12,14 @@ class Engine:
     async def loop(self):
         self.running = True
         while not self.shutdown:
-            await asyncio.sleep(1)
             print("TICK")
             with db_session:
-                for area in select(a for a in Area):
+                for mob_morphology in select(m for m in MobMorphology):
+                    print(mob_morphology.name)
+                    print(mob_morphology.active_morphology)
+                for area in select(a for a in AreaDefinition):
                     print(f"Area: {area}")
                     for room in area.rooms:
                         print(f"Room: {room}")
+            await asyncio.sleep(5)
 

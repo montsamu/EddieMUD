@@ -25,6 +25,17 @@ class MobGroup(db.Entity):
     leader = Required('MobBase')
     members = Set('MobBase')
 
+def resolve_dotted(morphology, dotted_key):
+    print("resolve_dotted:", dotted_key, morphology)
+    split_key = dotted_key.split(".")
+    num_keys = len(split_key)
+    for i, key in enumerate(dotted_key.split(".")):
+        print("key:", key)
+        morphology = morphology[key]
+        print("morphology:", morphology)
+    return morphology
+
+# TODO these may need to be loaded in dependency order?
 class MobMorphology(OnlineEditable, db.Entity):
     name = PrimaryKey(str) # humanoid, saurianoid, elvenoid, insectoid, equine, avian...
     morphology = Optional(Json, default={}) # can be base or deltas when loading? what about saving?!
@@ -34,7 +45,20 @@ class MobMorphology(OnlineEditable, db.Entity):
     races = Set('MobRace', lazy=True)
     @property
     def active_morphology(self):
-        return self.morphology # TODO apply delta
+        if self.base is None:
+            return self.morphology
+        active_morphology = dict(**self.base.active_morphology) # copy?!
+        for dotted_key in list(self.delta.get('remove',[])):
+            obj, key = resolve_dotted(active_morphology, dotted_key)
+            print(obj[key])
+            del obj[key]
+        for dotted_key,v in dict(**self.delta.get('add',{})).items():
+            obj, key = resolve_dotted(active_morphology, dotted_key)
+            print(obj[key])
+        for dotted_key,v in dict(**self.delta.get('replace',{})).items():
+            obj, key = resolve_dotted(active_morphology, dotted_key)
+            print(obj[key])
+        return active_morphology # TODO cache? compute on insert/update?
 
 class MobSize(OnlineEditable, db.Entity):
     name = PrimaryKey(str) # tiny small medium large titan...
@@ -205,6 +229,7 @@ class Player(OnlineEditable, MobBase):
     created_objects = Set('ObjectDefinition', lazy=True)
 
 # TODO helpers for is_weapon, is_staff, is_wand, etc.
+# furniture, fixture, chest, building?
 class ObjectType(OnlineEditable, db.Entity):
     name = PrimaryKey(str)
     supertype = Optional('ObjectType')

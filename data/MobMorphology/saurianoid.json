@@ -18,11 +18,15 @@
 			"head.ears.left_ear.left_ear_helix",
 			"head.ears.right_ear.right_earlobe",
 			"head.ears.right_ear.right_ear_helix",
-			"torso.chest.left_nipple",
-			"torso.chest.right_nipple",
 			"torso.belly.bellybutton"
 		],
 		"replace": {
+			"torso.chest.left_breast": {
+				"left_pectoral": {}
+			},
+			"torso.chest.right_breast": {
+				"right_pectoral": {}
+			},
 			"right_arm.right_hand.right_fingers": {
 				"right_thumb": {
 					"right_thumb_digit": {},

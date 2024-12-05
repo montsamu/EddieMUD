@@ -54,8 +54,12 @@
 		"torso": {
 			"front": {
 				"chest": {
-					"left_nipple": {},
-					"right_nipple": {}
+					"left_breast": {
+						"left_nipple": {}
+					},
+					"right_breast": {
+						"right_nipple": {}
+					}
 				},
 				"belly": {
 					"bellybutton": {}
