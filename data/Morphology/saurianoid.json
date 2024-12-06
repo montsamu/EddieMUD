@@ -22,9 +22,24 @@
 				       "{0}_pectoral": {}
 			       }
 		       },
-                       "/": {
-			       "(right|left)_(arm|leg)/\\1_(hand|foot)/\\1_(finger|toe)s/\\1_(thumb|pointer|middle|ring|pinky)_\\4/\\1_\\5_\\4nail": {
-	                               "{0}_{4}_claw": {}
+		       "/right_arm/right_hand/right_fingers/right_(thumb|pointer|middle|ring|pinky)_finger": {
+			       "right_(thumb|pointer|middle|ring|pinky)_finger_fingernail": {
+				       "right_{0}_finger_claw": {}
+			       }
+		       },
+		       "/left_arm/left_hand/left_fingers/left_(thumb|pointer|middle|ring|pinky)_finger": {
+			       "left_(thumb|pointer|middle|ring|pinky)_finger_fingernail": {
+				       "left_{0}_finger_claw": {}
+			       }
+		       },
+		       "/right_leg/right_foot/right_toes/right_(thumb|pointer|middle|ring|pinky)_toe": {
+			       "right_(thumb|pointer|middle|ring|pinky)_toe_toenail": {
+				       "right_{0}_toe_claw": {}
+			       }
+		       },
+		       "/left_leg/left_foot/left_toes/left_(thumb|pointer|middle|ring|pinky)_toe": {
+			       "left_(thumb|pointer|middle|ring|pinky)_toe_toenail": {
+				       "left_{0}_toe_claw": {}
 			       }
 		       }
 	       }

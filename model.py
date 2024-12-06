@@ -27,16 +27,6 @@ class MobGroup(db.Entity):
     leader = Required('MobBase')
     members = Set('MobBase')
 
-#def resolve_dotted(morphology, dotted_key):
-#    print("resolve_dotted:", dotted_key, morphology)
-#    split_key = dotted_key.split(".")
-#    num_keys = len(split_key)
-#    for i, key in enumerate(dotted_key.split(".")):
-#        print("key:", key)
-#        morphology = morphology[key]
-#        print("morphology:", morphology)
-#    return morphology
-
 def matching_sub_dict(d, path):
     if path == "/":
         yield None, d
@@ -73,9 +63,9 @@ def compute_active_morphology(base, delta):
                    if pm:
                        del sub_morphology[k]
     for path, replaces in dict(delta.get('replace', {})).items():
-        print("REPLACES:", path, replaces)
+        # print("REPLACES:", path, replaces)
         for m, sub_morphology in matching_sub_dict(active_morphology, path): # {'left_breast': {'left_nipple': {}}, 'right_breast': {'right_nipple': {}}}
-            print("sub_morphology:", sub_morphology)
+            # print("sub_morphology:", sub_morphology)
             for k,v in replaces.items(): # {'(left|right)_breast': {'{0}_pectoral': {}}}
                 p2 = re.compile(k)
                 if p2.groups: # there is a pattern to match
@@ -92,7 +82,7 @@ def compute_active_morphology(base, delta):
                     del sub_morphology[k]
                     sub_morphology.update(v) # TODO check v for patterns needing replaced?
     for path, adds in dict(delta.get('add', {})).items():
-        print("ADDS:", path, adds)
+        # print("ADDS:", path, adds)
         for m, sub_morphology in matching_sub_dict(active_morphology, path): # {'left_ear_helix': {}, 'left_ear_tragus': {}, 'left_earlobe': {}, 'right_ear_canal': {}}
             for k,v in adds.items(): # "{0}_ear_tip": {}
                 if k in sub_morphology:
@@ -104,18 +94,6 @@ def compute_active_morphology(base, delta):
                 else:
                     sub_morphology[k] = v
     return active_morphology
-
-#        for dotted_key in list(self.delta.get('remove',[])):
-#            obj, key = resolve_dotted(active_morphology, dotted_key)
-#            print(obj[key])
-#            del obj[key]
-#        for dotted_key,v in dict(**self.delta.get('add',{})).items():
-#            obj, key = resolve_dotted(active_morphology, dotted_key)
-#            print(obj[key])
-#        for dotted_key,v in dict(**self.delta.get('replace',{})).items():
-#            obj, key = resolve_dotted(active_morphology, dotted_key)
-#            print(obj[key])
-#        return active_morphology
 
 # TODO these may need to be loaded in dependency order?
 class Morphology(OnlineEditable, db.Entity):
