@@ -22,6 +22,11 @@
 				       "{0}_pectoral": {}
 			       }
 		       },
+		       "/head/face/mouth": {
+			       "teeth": {
+				       "fangs": {}
+			       }
+		       },
 		       "/right_arm/right_hand/right_fingers/right_(thumb|pointer|middle|ring|pinky)_finger": {
 			       "right_(thumb|pointer|middle|ring|pinky)_finger_fingernail": {
 				       "right_{0}_finger_claw": {}

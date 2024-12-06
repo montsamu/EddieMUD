@@ -19,7 +19,7 @@ class OnlineEditable(object):
         print("deleting",self,"from json...")
 
 class ContainerBase(db.Entity):
-    """Base entity type for entities which contain an inventory of objects"""
+    """Base entity type for entities which contain an inventory of instantiated objects"""
     inventory = Set('Object')
 
 class MobGroup(db.Entity):
