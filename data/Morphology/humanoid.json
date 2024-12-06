@@ -82,11 +82,26 @@
 			"right_wrist": {},
 			"right_hand": {
 				"right_fingers": {
-					"right_thumb": {},
-					"right_pointer": {},
-					"right_medius": {},
-					"right_ring": {},
-					"right_pinky": {}
+					"right_thumb_finger": {
+						"right_thumb_finger_digit": {},
+						"right_thumb_finger_fingernail": {}
+					},
+					"right_pointer_finger": {
+						"right_pointer_finger_digit": {},
+						"right_pointer_finger_fingernail": {}
+					},
+					"right_middle_finger": {
+						"right_middle_finger_digit": {},
+						"right_middle_finger_fingernail": {}
+					},
+					"right_ring_finger": {
+						"right_ring_finger_digit": {},
+						"right_ring_finger_fingernail": {}
+					},
+					"right_pinky_finger": {
+						"right_pinky_finger_digit": {},
+						"right_pinky_finger_fingernail": {}
+					}
 				},
 				"right_palm": {},
 				"right_backhand": {}
@@ -102,11 +117,26 @@
 			"left_wrist": {},
 			"left_hand": {
 				"left_fingers": {
-					"left_thumb": {},
-					"left_pointer_finger": {},
-					"left_meddle_finger": {},
-					"left_ring_finger": {},
-					"left_pinky_finger": {}
+					"left_thumb_finger": {
+						"left_thumb_finger_digit": {},
+						"left_thumb_finger_fingernail": {}
+					},
+					"left_pointer_finger": {
+						"left_pointer_finger_digit": {},
+						"left_pointer_finger_fingernail": {}
+					},
+					"left_middle_finger": {
+						"left_middle_finger_digit": {},
+						"left_middle_finger_fingernail": {}
+					},
+					"left_ring_finger": {
+						"left_ring_finger_digit": {},
+						"left_ring_finger_fingernail": {}
+					},
+					"left_pinky_finger": {
+						"left_pinky_finger_digit": {},
+						"left_pinky_finger_fingernail": {}
+					}
 				},
 				"left_palm": {},
 				"left_backhand": {}
@@ -129,11 +159,26 @@
 				"right_talus": {},
 				"right_heel": {},
 				"right_toes": {
-					"right_hallux": {},
-					"right_pointer_toe": {},
-					"right_middle_toe": {},
-					"right_ring_toe": {},
-					"right_pinky_toe": {}
+					"right_thumb_toe": {
+						"right_thumb_toe_digit": {},
+						"right_thumb_toe_toenail": {}
+					},
+					"right_pointer_toe": {
+						"right_pointer_toe_digit": {},
+						"right_pointer_toe_toenail": {}
+					},
+					"right_middle_toe": {
+						"right_middle_toe_digit": {},
+						"right_middle_toe_toenail": {}
+					},
+					"right_ring_toe": {
+						"right_ring_toe_digit": {},
+						"right_ring_toe_toenail": {}
+					},
+					"right_pinky_toe": {
+						"right_pinky_toe_digit": {},
+						"right_pinky_toe_toenail": {}
+					}
 				}
 			}
 		},
@@ -154,11 +199,26 @@
 				"left_talus": {},
 				"left_heel": {},
 				"left_toes": {
-					"left_hallux": {},
-					"left_pointer_toe": {},
-					"left_middle_toe": {},
-					"left_ring_toe": {},
-					"left_pinky_toe": {}
+					"left_big_toe": {
+						"left_big_toe_digit": {},
+						"left_big_toe_toenail": {}
+					},
+					"left_pointer_toe": {
+						"left_pointer_toe_digit": {},
+						"left_pointer_toe_toenail": {}
+					},
+					"left_middle_toe": {
+						"left_middle_toe_digit": {},
+						"left_middle_toe_toenail": {}
+					},
+					"left_ring_toe": {
+						"left_ring_toe_digit": {},
+						"left_ring_toe_toenail": {}
+					},
+					"left_pinky_toe": {
+						"left_pinky_toe_digit": {},
+						"left_pinky_toe_toenail": {}
+					}
 				}
 			}
 		}

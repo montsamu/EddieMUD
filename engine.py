@@ -14,7 +14,7 @@ class Engine:
         while not self.shutdown:
             print("TICK")
             with db_session:
-                for mob_morphology in select(m for m in MobMorphology):
+                for mob_morphology in select(m for m in Morphology):
                     print(mob_morphology.name)
                     print(mob_morphology.active_morphology)
                 for area in select(a for a in AreaDefinition):

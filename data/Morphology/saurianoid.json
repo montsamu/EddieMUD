@@ -1,0 +1,32 @@
+{
+	"name": "saurianoid",
+	"base": "humanoid",
+	"delta": {
+		"add": {
+                       "/torso": {
+			       "tail": {
+                                       "tail_base": {},
+                                       "tail_body": {},
+                                       "tail_tip": {}
+			       }
+                       }
+		},
+               "remove": {
+                       "/head/face/nose": ["(left|right)_nasal_cartilage"],
+                       "/head/ears/(left|right)_ear": ["{0}_ear(lobe|_helix)"],
+                       "/torso/front/belly": ["bellybutton"]
+	       },
+	       "replace": {
+		       "/torso/front/chest": {
+			       "(left|right)_breast": {
+				       "{0}_pectoral": {}
+			       }
+		       },
+                       "/": {
+			       "(right|left)_(arm|leg)/\\1_(hand|foot)/\\1_(finger|toe)s/\\1_(thumb|pointer|middle|ring|pinky)_\\4/\\1_\\5_\\4nail": {
+	                               "{0}_{4}_claw": {}
+			       }
+		       }
+	       }
+	}
+}	

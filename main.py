@@ -67,7 +67,7 @@ if __name__=="__main__":
             ObjectType,
             ObjectDefinition,
             SpellStep, Spell,
-            MobMorphology,
+            Morphology,
             MobFlag, MobEffect,
             RoomFlag, AreaFlag, DoorFlag, Direction,
             MobDefinition]:

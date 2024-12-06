@@ -1,6 +1,8 @@
 
-from pony.orm import Database, Required, Set, Optional, PrimaryKey, composite_key, Json, StrArray
 from datetime import datetime
+from copy import deepcopy
+import re
+from pony.orm import Database, Required, Set, Optional, PrimaryKey, composite_key, Json, StrArray
 
 db = Database()
 db._in_init_ = True
@@ -25,40 +27,109 @@ class MobGroup(db.Entity):
     leader = Required('MobBase')
     members = Set('MobBase')
 
-def resolve_dotted(morphology, dotted_key):
-    print("resolve_dotted:", dotted_key, morphology)
-    split_key = dotted_key.split(".")
-    num_keys = len(split_key)
-    for i, key in enumerate(dotted_key.split(".")):
-        print("key:", key)
-        morphology = morphology[key]
-        print("morphology:", morphology)
-    return morphology
+#def resolve_dotted(morphology, dotted_key):
+#    print("resolve_dotted:", dotted_key, morphology)
+#    split_key = dotted_key.split(".")
+#    num_keys = len(split_key)
+#    for i, key in enumerate(dotted_key.split(".")):
+#        print("key:", key)
+#        morphology = morphology[key]
+#        print("morphology:", morphology)
+#    return morphology
+
+def matching_sub_dict(d, path):
+    if path == "/":
+        yield None, d
+    else:
+        split_paths = path.split("/")
+        num_splits = len(split_paths)
+        for i, split_path in enumerate(split_paths):
+            if split_path:
+                p = re.compile(split_path)
+                if p.groups:
+                    for k,v in d.items():
+                        m = p.match(k)
+                        if m:
+                            yield m, d[k]
+                else:
+                    d = d[split_path]
+                    if i+1 == num_splits:
+                        yield None, d
+
+def compute_active_morphology(base, delta):
+    active_morphology = deepcopy(base) # copy?!
+    for path, removes in dict(delta.get('remove', {})).items():
+        # OLD: /head/ears ['(left|right)_ear/\\1_ear(lobe|_helix)']
+        # NEW: /head/ears/(left|right)_ear ['{0}_ear(lobe|_helix)']
+        # /head/face/nose ['(left|right)_nasal_cartilage']
+        # /torso/belly ['/bellybutton']
+       for m, sub_morphology in matching_sub_dict(active_morphology, path):
+           for remove in removes:
+               if m is not None:
+                   remove = remove.format(*m.groups())
+               p = re.compile(remove)
+               for k in list(sub_morphology.keys()): # this usage as we plan to modify
+                   pm = p.match(k)
+                   if pm:
+                       del sub_morphology[k]
+    for path, replaces in dict(delta.get('replace', {})).items():
+        print("REPLACES:", path, replaces)
+        for m, sub_morphology in matching_sub_dict(active_morphology, path): # {'left_breast': {'left_nipple': {}}, 'right_breast': {'right_nipple': {}}}
+            print("sub_morphology:", sub_morphology)
+            for k,v in replaces.items(): # {'(left|right)_breast': {'{0}_pectoral': {}}}
+                p2 = re.compile(k)
+                if p2.groups: # there is a pattern to match
+                    for k2 in list(sub_morphology.keys()):
+                        m2 = p2.match(k2)
+                        if m2: # there is a match
+                            v2 = {}
+                            for kv2 in v.keys():
+                                kv2m = kv2.format(*m2.groups())
+                                v2[kv2m] = v[kv2]
+                            del sub_morphology[k2]
+                            sub_morphology.update(v2)
+                else: # no pattern to match
+                    del sub_morphology[k]
+                    sub_morphology.update(v) # TODO check v for patterns needing replaced?
+    for path, adds in dict(delta.get('add', {})).items():
+        print("ADDS:", path, adds)
+        for m, sub_morphology in matching_sub_dict(active_morphology, path): # {'left_ear_helix': {}, 'left_ear_tragus': {}, 'left_earlobe': {}, 'right_ear_canal': {}}
+            for k,v in adds.items(): # "{0}_ear_tip": {}
+                if k in sub_morphology:
+                    raise Exception(f"key {k} already in morphology and cannot be added!")
+                if m is not None:
+                    v2 = v.copy() # TODO check for patterns in there...
+                    k2 = k.format(*m.groups())
+                    sub_morphology[k2] = v2
+                else:
+                    sub_morphology[k] = v
+    return active_morphology
+
+#        for dotted_key in list(self.delta.get('remove',[])):
+#            obj, key = resolve_dotted(active_morphology, dotted_key)
+#            print(obj[key])
+#            del obj[key]
+#        for dotted_key,v in dict(**self.delta.get('add',{})).items():
+#            obj, key = resolve_dotted(active_morphology, dotted_key)
+#            print(obj[key])
+#        for dotted_key,v in dict(**self.delta.get('replace',{})).items():
+#            obj, key = resolve_dotted(active_morphology, dotted_key)
+#            print(obj[key])
+#        return active_morphology
 
 # TODO these may need to be loaded in dependency order?
-class MobMorphology(OnlineEditable, db.Entity):
+class Morphology(OnlineEditable, db.Entity):
     name = PrimaryKey(str) # humanoid, saurianoid, elvenoid, insectoid, equine, avian...
     morphology = Optional(Json, default={}) # can be base or deltas when loading? what about saving?!
     delta = Optional(Json, default={}) # can be base or deltas when loading? what about saving?!
-    base = Optional('MobMorphology')
-    variants = Set('MobMorphology', lazy=True)
+    base = Optional('Morphology') # implies needing to load in dependency order...
+    variants = Set('Morphology', lazy=True)
     races = Set('MobRace', lazy=True)
     @property
     def active_morphology(self):
         if self.base is None:
             return self.morphology
-        active_morphology = dict(**self.base.active_morphology) # copy?!
-        for dotted_key in list(self.delta.get('remove',[])):
-            obj, key = resolve_dotted(active_morphology, dotted_key)
-            print(obj[key])
-            del obj[key]
-        for dotted_key,v in dict(**self.delta.get('add',{})).items():
-            obj, key = resolve_dotted(active_morphology, dotted_key)
-            print(obj[key])
-        for dotted_key,v in dict(**self.delta.get('replace',{})).items():
-            obj, key = resolve_dotted(active_morphology, dotted_key)
-            print(obj[key])
-        return active_morphology # TODO cache? compute on insert/update?
+        return compute_active_morphology(self.base.active_morphology, self.delta) # TODO: cache? calculate on update...
 
 class MobSize(OnlineEditable, db.Entity):
     name = PrimaryKey(str) # tiny small medium large titan...
@@ -163,7 +234,7 @@ class MobRace(OnlineEditable, db.Entity):
     name = PrimaryKey(str) # elf dwarf troll half-dwarf
     parents = Set('MobRace', reverse='children')
     children = Set('MobRace', reverse='parents')
-    morphology = Required('MobMorphology')
+    morphology = Required('Morphology')
     size = Required('MobSize')
     flags = Required(Json, default={})
     races = Set('MobDefinition', lazy=True)
@@ -275,7 +346,7 @@ class AreaDefinition(OnlineEditable, db.Entity):
     name = Required(str, unique=True)
     area = Optional('Area') # , unique=True) # CAUSED ERROR!
     metadata = Required(Json, default={}) # created_by...
-    rdefs = Set('RoomDefinition')
+    rooms = Set('RoomDefinition')
     aflagdefs = Required(Json, default={}) # todo: check insert/update for existence using py_check function
 
 class Area(db.Entity):

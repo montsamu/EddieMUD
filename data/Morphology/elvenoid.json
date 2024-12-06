@@ -1,0 +1,11 @@
+{
+	"name": "elvenoid",
+	"base": "humanoid",
+	"delta": {
+                "add": {
+                       "/head/ears/(left|right)_ear": {
+                               "{0}_ear_tip": {}
+                       }
+                }
+	}
+}

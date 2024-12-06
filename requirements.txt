@@ -1,4 +1,6 @@
 telnetlib3
 json5
-duckdb
-fsspec  # for duckdb json support
+json-delta
+pony
+#duckdb
+#fsspec  # for duckdb json support
