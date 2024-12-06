@@ -1,0 +1,6 @@
+{
+	"name": "half-elf",
+	"morphology": "halfelvenoid",
+	"size": "medium",
+	"parents": ["human","elf"]
+}

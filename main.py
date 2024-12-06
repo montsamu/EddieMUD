@@ -1,6 +1,5 @@
 
 from model import *
-
 from engine import Engine
 
 # db = model.db
@@ -14,20 +13,62 @@ import json5
 # import importlib
 from pony.orm import db_session, set_sql_debug
 
-def load_dtype(dtype):
+def load_dtype_instance(dtype, dtype_json, set_references):
+    for k, v in set_references.items():
+        if k in dtype_json:
+            s = []
+            for sk in dtype_json[k]:
+                s.append(v[sk])
+            dtype_json[k] = s
+
+    _dtype = dtype(**dtype_json)
+    return _dtype
+
+# TODO refactor
+def load_dtype(dtype, hierarchy_attr=None, multiple_inheritance=False, set_references={}):
     with db_session:
 
         print(f"Loading: {dtype.__qualname__}")
         # dtype = getattr(model, dtype_dir)
 
+        loaded = set()
+        delayed_loads = []
         dtype_json_files = glob.glob(f'data/{dtype.__qualname__}/*.json')
         for dtype_json_file in dtype_json_files:
             with open(dtype_json_file) as f:
                 print(f"Loading: {dtype_json_file}")
                 dtype_json = json.load(f)
                 print(dtype_json['name'])
-                _dtype = dtype(**dtype_json)
+                if hierarchy_attr and dtype_json.get(hierarchy_attr):
+                    print(f"Delaying: {dtype_json['name']}")
+                    delayed_loads.append(dtype_json)
+                else:
+                    _dtype = load_dtype_instance(dtype, dtype_json, set_references)
+                    loaded.add(_dtype.name)
+                    print(f"Loaded: {_dtype.name}")
+
+        redelayed_loads = []
+        for delayed_load in delayed_loads:
+            print(f"Loading: {delayed_load['name']}")
+            parent_set = set()
+            if multiple_inheritance:
+                for p in delayed_load[hierarchy_attr]:
+                    parent_set.add(p)
+            else:
+                parent_set.add(delayed_load[hierarchy_attr])
+            if parent_set.issubset(loaded):
+                _dtype = load_dtype_instance(dtype, delayed_load, set_references)
+                loaded.add(_dtype.name)
                 print(f"Loaded: {_dtype.name}")
+            else:
+                print(f"Redelaying: {delayed_load['name']}")
+                redelayed_loads.append(delayed_load)
+
+        for redelayed_load in redelayed_loads:
+            print(f"Loading: {redelayed_load['name']}")
+            _dtype = load_dtype_instance(dtype, redelayed_load, set_references)
+            loaded.add(_dtype.name)
+            print(f"Loaded: {_dtype.name}")
 
 def load_objects():
     pass
@@ -60,16 +101,19 @@ if __name__=="__main__":
     db.bind('sqlite', ':memory:', create_db=True)
     db.generate_mapping(create_tables=True)
 
+    load_dtype(ObjectType, hierarchy_attr='supertype')
+    load_dtype(ObjectDefinition)
+    load_dtype(MobSize)
+    load_dtype(Morphology, hierarchy_attr='base')
     set_sql_debug(True)
+    load_dtype(MobRace, hierarchy_attr='parents', multiple_inheritance=True, set_references={'parents': MobRace})
 
     # TODO: control order outside of code?
     for dtype in [
-            ObjectType,
-            ObjectDefinition,
             SpellStep, Spell,
-            Morphology,
             MobFlag, MobEffect,
             RoomFlag, AreaFlag, DoorFlag, Direction,
+            Player,
             MobDefinition]:
         load_dtype(dtype)
 
@@ -79,5 +123,5 @@ if __name__=="__main__":
     db._in_init_ = False
 
     engine = Engine(db)
-    asyncio.run(engine.loop())
+    asyncio.run(engine.run())
 

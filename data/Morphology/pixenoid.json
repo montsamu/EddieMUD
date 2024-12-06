@@ -1,0 +1,14 @@
+{
+	"name": "pixenoid",
+	"base": "elvenoid",
+	"delta": {
+                "add": {
+                       "/torso/back": {
+			       "wings": {
+				       "left_wing": {},
+				       "right_wing": {}
+			       }
+		       }
+                }
+	}
+}

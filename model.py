@@ -250,7 +250,7 @@ class MobDefinition(OnlineEditable, db.Entity):
     name = Required(str, unique=True)
     metadata = Required(Json, default={})
     created_at = Required(datetime, default=datetime.now)
-    created_by = Optional('Player', reverse='created_mobs')
+    # metadata: created_by = Optional('Player', reverse='created_mobs')
     race = Required('MobRace')
     mflags = Required(Json, default={})
     effects = Set('MobEffect')
@@ -259,10 +259,12 @@ class MobDefinition(OnlineEditable, db.Entity):
     level = Required(int, default=1)
     experience = Required(int, default=0)
 
-class MobBase(ContainerBase): # we don't save in-memory mob instances
-    mdef = Required(MobDefinition)
-    name = Optional(str)
-    title = Optional(str)
+class PlayerDefinition(OnlineEditable, MobDefinition):
+    password = Required(str)
+    known = Set('PlayerDefinition', reverse='known_by')
+    known_by = Set('PlayerDefinition', reverse='known')
+
+class MobBase(ContainerBase):
     mflags = Required(Json, default={})
     effects = Set('MobEffect')
     room = Required('Room')
@@ -273,15 +275,20 @@ class MobBase(ContainerBase): # we don't save in-memory mob instances
     skillset = Set('SkillSetItem')
     spellbook = Set('SpellBookItem')
 
+class Mob(OnlineEditable, MobBase):
+    mdef = Required(MobDefinition)
+    name = Optional(str)
+    title = Optional(str)
+
 class Player(OnlineEditable, MobBase):
-    created_mobs = Set('MobDefinition', lazy=True)
-    created_objects = Set('ObjectDefinition', lazy=True)
+    pdef = Required(PlayerDefinition)
+    last_room = Optional('RoomDefinition')
 
 # TODO helpers for is_weapon, is_staff, is_wand, etc.
 # furniture, fixture, chest, building?
 class ObjectType(OnlineEditable, db.Entity):
     name = PrimaryKey(str)
-    supertype = Optional('ObjectType')
+    supertype = Optional('ObjectType') # multiple supertypes so we can have a chair be a weapon and furniture?
     subtypes = Set('ObjectType', lazy=True)
     objects = Set('ObjectDefinition', lazy=True)
     required_equipped_by = Set('ObjectRequirement', reverse='equipment_types', lazy=True)
@@ -290,7 +297,7 @@ class ObjectType(OnlineEditable, db.Entity):
 
 class ObjectDefinition(OnlineEditable, db.Entity):
     created_at = Required(datetime)
-    created_by = Optional('Player', reverse='created_objects')
+    # metadata: created_by = Optional('Player', reverse='created_objects')
     metadata = Required(Json, default={})
     name = Required(str, unique=True)
     otype = Required('ObjectType')

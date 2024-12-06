@@ -14,7 +14,8 @@
                "remove": {
                        "/head/face/nose": ["(left|right)_nasal_cartilage"],
                        "/head/ears/(left|right)_ear": ["{0}_ear(lobe|_helix)"],
-                       "/torso/front/belly": ["bellybutton"]
+                       "/torso/front/belly": ["bellybutton"],
+		       "/head/face": ["beard"]
 	       },
 	       "replace": {
 		       "/torso/front/chest": {
