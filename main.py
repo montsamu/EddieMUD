@@ -11,9 +11,9 @@ import glob
 import json5
 # from os import walk
 # import importlib
-from pony.orm import db_session, set_sql_debug
+from pony.orm import db_session, set_sql_debug, select
 
-def load_dtype_instance(dtype, dtype_json, set_references):
+def load_dtype_instance(dtype, dtype_json, set_references, rdef_attrs, ephemeral_attrs):
     for k, v in set_references.items():
         if k in dtype_json:
             s = []
@@ -21,11 +21,20 @@ def load_dtype_instance(dtype, dtype_json, set_references):
                 s.append(v[sk])
             dtype_json[k] = s
 
+    for k in rdef_attrs:
+        if dtype_json.get(k):
+            adef = AreaDefinition.get(id=dtype_json[k][0])
+            rdef = RoomDefinition.get(adef=adef, id=dtype_json[k][1])
+            print(rdef)
+            dtype_json[k] = rdef
+
+    for k in ephemeral_attrs:
+        del dtype_json[k]
     _dtype = dtype(**dtype_json)
     return _dtype
 
 # TODO refactor
-def load_dtype(dtype, hierarchy_attr=None, multiple_inheritance=False, set_references={}):
+def load_dtype(dtype, hierarchy_attr=None, multiple_inheritance=False, set_references={}, rdef_attrs=[], ephemeral_attrs=[]):
     with db_session:
 
         print(f"Loading: {dtype.__qualname__}")
@@ -43,7 +52,7 @@ def load_dtype(dtype, hierarchy_attr=None, multiple_inheritance=False, set_refer
                     print(f"Delaying: {dtype_json['name']}")
                     delayed_loads.append(dtype_json)
                 else:
-                    _dtype = load_dtype_instance(dtype, dtype_json, set_references)
+                    _dtype = load_dtype_instance(dtype, dtype_json, set_references, rdef_attrs, ephemeral_attrs)
                     loaded.add(_dtype.name)
                     print(f"Loaded: {_dtype.name}")
 
@@ -57,7 +66,7 @@ def load_dtype(dtype, hierarchy_attr=None, multiple_inheritance=False, set_refer
             else:
                 parent_set.add(delayed_load[hierarchy_attr])
             if parent_set.issubset(loaded):
-                _dtype = load_dtype_instance(dtype, delayed_load, set_references)
+                _dtype = load_dtype_instance(dtype, delayed_load, set_references, rdef_attrs, ephemeral_attrs)
                 loaded.add(_dtype.name)
                 print(f"Loaded: {_dtype.name}")
             else:
@@ -66,7 +75,7 @@ def load_dtype(dtype, hierarchy_attr=None, multiple_inheritance=False, set_refer
 
         for redelayed_load in redelayed_loads:
             print(f"Loading: {redelayed_load['name']}")
-            _dtype = load_dtype_instance(dtype, redelayed_load, set_references)
+            _dtype = load_dtype_instance(dtype, redelayed_load, set_references, rdef_attrs, ephemeral_attrs)
             loaded.add(_dtype.name)
             print(f"Loaded: {_dtype.name}")
 
@@ -94,8 +103,14 @@ def load_areas():
                 _adef = d['area'] if "in" not in v else AreaDefinition[v['in']]
                 _ddef = DoorDefinition(room=d['room'], direction=Direction[k], destination=RoomDefinition[_adef, v["to"]], dflagdefs=v.get("flags",{}))
 
-def load_players():
-    pass
+def instantiate_areas():
+    with db_session:
+        for adef in select(a for a in AreaDefinition):
+            a = Area(adef=adef)
+            for rdef in adef.rdefs:
+                r = Room(area=a, rdef=rdef)
+                for ddef in rdef.ddefs:
+                    d = Door(room=r, ddef=ddef)
 
 if __name__=="__main__":
     db.bind('sqlite', ':memory:', create_db=True)
@@ -105,23 +120,26 @@ if __name__=="__main__":
     load_dtype(ObjectDefinition)
     load_dtype(MobSize)
     load_dtype(Morphology, hierarchy_attr='base')
-    set_sql_debug(True)
     load_dtype(MobRace, hierarchy_attr='parents', multiple_inheritance=True, set_references={'parents': MobRace})
+    load_dtype(Direction)
+    load_areas()
+    load_dtype(PlayerDefinition, rdef_attrs=['last_room'], ephemeral_attrs=['player']) # TODO: reference saved items? quests? spells?
 
     # TODO: control order outside of code?
     for dtype in [
             SpellStep, Spell,
             MobFlag, MobEffect,
-            RoomFlag, AreaFlag, DoorFlag, Direction,
-            Player,
+            RoomFlag, AreaFlag, DoorFlag,
             MobDefinition]:
         load_dtype(dtype)
 
-    load_areas()
+    instantiate_areas() # engine handles resets/loads of objects/mobs on first TICK(S)
 
     # load players
     db._in_init_ = False
 
-    engine = Engine(db)
+    # set_sql_debug(True)
+
+    engine = Engine()
     asyncio.run(engine.run())
 

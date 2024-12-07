@@ -1,5 +1,7 @@
 {
 	"name": "halfling",
 	"morphology": "elvenoid",
-	"size": "small"
+	"size": "small",
+	"description": "short and inquisitive and nimble, enjoys music, food, and the occasional adventure",
+	"playable": true
 }

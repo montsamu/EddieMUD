@@ -1,5 +1,7 @@
 {
 	"name": "saurian",
 	"morphology": "saurianoid",
-	"size": "medium"
+	"size": "medium",
+	"description":"scaled or feathered, the lizardfolk bear claws, fangs, and tails",
+	"playable": true
 }

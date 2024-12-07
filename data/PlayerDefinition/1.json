@@ -1,0 +1,22 @@
+{
+    "bamfin": "appears.",
+    "bamfout": "disappears.",
+    "classtype": "PlayerDefinition",
+    "created_at": "2024-12-06 22:33:36.202611",
+    "experience": 0,
+    "guild": null,
+    "id": 1,
+    "last_online": "2024-12-06 22:33:36.202630",
+    "last_room": [
+        1,
+        2
+    ],
+    "level": 1,
+    "mail": null,
+    "metadata": {},
+    "name": "Phule",
+    "password": "JDJiJDEyJHBrVVVxdHBQQ3JPbUZOeUU1YTJNUHUwLk1kRXdCUXQ2UVprTHhnbW9yMm0wV0M2Y2VhdFRH",
+    "player": 11,
+    "race": "human",
+    "title": ""
+}

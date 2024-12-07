@@ -1,5 +1,7 @@
 {
 	"name": "dwarf",
 	"morphology": "humanoid",
-	"size": "small"
+	"size": "small",
+	"description":"short and stocky, known for their strength and their beards",
+	"playable": true
 }

@@ -1,5 +1,7 @@
 {
 	"name": "elf",
 	"morphology": "elvenoid",
-	"size": "medium"
+	"size": "medium",
+	"description":"slender and graceful, long-lived and with an affinity for magic",
+	"playable": true
 }

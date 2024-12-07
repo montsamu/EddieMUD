@@ -1,5 +1,7 @@
 {
 	"name": "human",
 	"morphology": "humanoid",
-	"size": "medium"
+	"size": "medium",
+	"description":"average height, average build, average lifespan, average talents, and yet?",
+	"playable": true
 }

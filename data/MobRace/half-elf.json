@@ -2,5 +2,7 @@
 	"name": "half-elf",
 	"morphology": "halfelvenoid",
 	"size": "medium",
-	"parents": ["human","elf"]
+	"parents": ["human","elf"],
+	"description": "the muscular build of a human, the ears of an elf, and a long lifespan",
+	"playable": true
 }
