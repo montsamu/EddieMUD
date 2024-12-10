@@ -274,9 +274,20 @@ class Engine:
         del self.clients[str(id(client))]
         # TODO where to remove Player instance, and notify of disappear?
 
+    async def mload(self, room, mreset):
+        with db_session:
+            mob = Mob(room=room, mdef=mreset.mdef, mreset=mreset)
+            return mob
+
+    async def oload(self, room, oreset):
+        with db_session:
+            obj = Object(owner=room, odef=oreset.odef, oreset=oreset)
+            return obj
+
     async def run(self):
         self.running = True
         self.server = await create_server(port=6023, shell=self.shell)
+        # TODO: each area/room has a tickcount to reset?
 
         while not self.shutdown:
             print("TICK")
@@ -289,6 +300,18 @@ class Engine:
                     print(f"Area: {area.adef.name}")
                     for room in area.rooms:
                         print(f"  Room: {room.rdef.name}")
+                        for obj in room.inventory:
+                            print(f"    Obj: {obj}")
+                        for mob in room.mobs:
+                            print(f"    Mob: {mob}")
+                        # TODO: open/shut doors if reset tick?
+                        # TODO: logic for WHEN to mload/oload...
+                        for mreset in room.rdef.mresets:
+                            if not mreset.mob:
+                                await self.mload(room, mreset)
+                        for oreset in room.rdef.oresets:
+                            if not oreset.obj:
+                                await self.oload(room, oreset)
                 # process event queue
 
             await asyncio.sleep(1)

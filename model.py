@@ -53,6 +53,12 @@ class DisplayNamed:
         if not self.display_name:
             self.display_name = self.name.replace("_"," ")
 
+class HasPlural:
+    """Mixin for definition entity hooks to provide plural default"""
+    def before_insert(self):
+        if not self.plural:
+            self.plural = self.name + "s"
+
 class ContainerBase(HasEphemeral, db.Entity):
     """Base entity type for entities which contain an inventory of instantiated objects"""
     inventory = Set('Object')
@@ -334,6 +340,7 @@ class MobNation(HasEphemeral, OnlineEditable, db.Entity):
 # prayer points...
 
 # base class for definitions of mobs and players
+# sharing this base class means that primary key "id" is SHARED (must be unique) among these subclasses
 class MobBaseDefinition(OnlineEditable, db.Entity):
     name = Required(str, unique=True)
     title = Optional(str) # Sir, Captain
@@ -533,16 +540,19 @@ class Area(Ephemeral, db.Entity):
     aflags = Required(Json, default={}) # active area flags, not persisted
 
 # TODO: reset a special version of an object, or even something like a LIT torch, etc.
+# TODO: reset a container full of objects
+# TODO: need to ORDER these...
 class ObjectReset(HasEphemeral, OnlineEditable, db.Entity):
-    room = Required('RoomDefinition')
+    rdef = Required('RoomDefinition')
     odef = Required('ObjectDefinition')
     obj = Optional('Object') # the object loaded by this oreset, if any
     @classmethod
     def ephemerals(cls):
         return ('obj',)
 
+# TODO: percent table, reset mob sitting in a chair, as leader of a group, etc.
 class MobReset(HasEphemeral, OnlineEditable, db.Entity):
-    room = Required('RoomDefinition')
+    rdef = Required('RoomDefinition')
     mdef = Required('MobDefinition') # todo: add ability to provide special weapons?, attrs, level, etc.
     name = Optional(str) # special unique name for this mob
     effects = Set('MobEffect') # special effects for this mob

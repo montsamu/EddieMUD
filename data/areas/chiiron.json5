@@ -3,6 +3,12 @@
     name: "The City of Chiiron",
     rooms: [
         {id: 1, name: "Fountain Square",
+         oresets: [
+           {odef: 1}
+         ],
+         mresets: [
+           {mdef: 3}
+         ],
          doors: {
            n: {to: 2},
            e: {to: 4},

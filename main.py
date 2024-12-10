@@ -84,15 +84,11 @@ def load_dtype(dtype, hierarchy_attr=None, multiple_inheritance=False, set_refer
             loaded.add(_dtype.name)
             print(f"Loaded: {_dtype.name}")
 
-def load_objects():
-    pass
-
-def load_mobs():
-    pass
-
 def load_areas():
     with db_session:
         door_data = []
+        oreset_data = []
+        mreset_data = []
         area_json5_files = glob.glob('data/areas/*.json5')
         for area_json5_file in area_json5_files:
             with open(area_json5_file) as f:
@@ -100,13 +96,27 @@ def load_areas():
                 adefdata = json5.load(f)
                 _adef = AreaDefinition(id=adefdata['id'], name=adefdata['name'])
                 for rdefdata in adefdata['rooms']:
-                    _rdef = RoomDefinition(id=rdefdata['id'], name=rdefdata['name'], adef=_adef)
+                    _rdef = RoomDefinition(id=rdefdata['id'], name=rdefdata['name'], adef=_adef) #, oresets=oresets, mresets=mresets)
                     if "doors" in rdefdata:
                         door_data.append({'room':_rdef, 'doors':rdefdata["doors"], 'area':_adef})
+                    if "oresets" in rdefdata:
+                        oreset_data.append({'room':_rdef, 'oresets':rdefdata["oresets"]})
+                    if "mresets" in rdefdata:
+                        mreset_data.append({'room':_rdef, 'mresets':rdefdata["mresets"]})
         for d in door_data:
             for k, v in d['doors'].items():
                 _adef = d['area'] if "in" not in v else AreaDefinition[v['in']]
                 _ddef = DoorDefinition(room=d['room'], direction=Direction[k], destination=RoomDefinition[_adef, v["to"]], dflagdefs=v.get("flags",{}))
+
+        for od in oreset_data:
+            for oreset in od['oresets']:
+                # _odefkey = oreset.pop('odef')
+                _oreset = ObjectReset(rdef=od['room'], **oreset) # odef=ObjectDefinition[_odefkey], **oreset)
+
+        for md in mreset_data:
+            for mreset in md['mresets']:
+                # _mdefkey = mreset.pop('mdef')
+                _mreset = MobReset(rdef=od['room'], **mreset) # mdef=MobDefinition[_mdefkey], **mreset)
 
 def instantiate_areas():
     with db_session:
@@ -129,16 +139,16 @@ if __name__=="__main__":
     load_dtype(MobSize)
     load_dtype(Morphology, hierarchy_attr='base')
     load_dtype(Race, hierarchy_attr='parents', multiple_inheritance=True, set_references={'parents': Race})
+    load_dtype(MobDefinition)
     load_dtype(Direction)
-    load_areas()
+    load_areas() # AreaDefinition, RoomDefinition, DoorDefinition, ObjectReset, MobReset...
     load_dtype(PlayerDefinition, rdef_attrs=['last_room']) # , ephemeral_attrs=['player']) # TODO: reference saved items? quests? spells?
 
     # TODO: control order outside of code?
     for dtype in [
             SpellStep, Spell,
             MobFlag, MobEffect,
-            RoomFlag, AreaFlag, DoorFlag,
-            MobDefinition]:
+            RoomFlag, AreaFlag, DoorFlag]:
         load_dtype(dtype)
 
     instantiate_areas() # engine handles resets/loads of objects/mobs on first TICK(S)
