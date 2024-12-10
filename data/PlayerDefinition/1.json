@@ -1,4 +1,6 @@
 {
+    "attrs": {},
+    "background": "farmer",
     "bamfin": "appears.",
     "bamfout": "disappears.",
     "classtype": "PlayerDefinition",

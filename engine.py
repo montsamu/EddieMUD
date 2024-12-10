@@ -239,7 +239,7 @@ class Engine:
 
     def get_player_races(self):
         with db_session:
-            return MobRace.select(playable=True)[:] # return slice out of session
+            return Race.select(playable=True)[:] # return slice out of session
 
     # TODO: check to see if player is already active (linkdead, left logged in another terminal, etc.)
     async def load_player(self, client, player_def, to_room_id=None):
@@ -264,7 +264,7 @@ class Engine:
 
     def create_player(self, name, password, race):
         with db_session:
-            return PlayerDefinition(name=name, password=b64encode(bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())).decode('utf-8'), race=MobRace[race])
+            return PlayerDefinition(name=name, password=b64encode(bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())).decode('utf-8'), race=Race[race])
 
     async def shell(self, reader, writer):
         writer.iac(WONT, ECHO)

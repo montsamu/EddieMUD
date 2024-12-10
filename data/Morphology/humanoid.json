@@ -5,8 +5,12 @@
 			"face": {
 				"eyes": {
 					"left_eye": {
+						"left_eyelid": {},
+						"left_eyeball": {}
 					},
 					"right_eye": {
+						"right_eyelid": {},
+						"right_eyeball": {}
 					}
 				},
 				"nose": {

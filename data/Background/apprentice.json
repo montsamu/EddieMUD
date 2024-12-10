@@ -1,0 +1,7 @@
+{
+	"name": "apprentice",
+	"description": "after some years ensconced within a magical order, you now seek your own path",
+        "attrs": {
+                "int": {"min":11}
+        }
+}

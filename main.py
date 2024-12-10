@@ -116,11 +116,13 @@ if __name__=="__main__":
     db.bind('sqlite', ':memory:', create_db=True)
     db.generate_mapping(create_tables=True)
 
+    load_dtype(Attribute)
+    load_dtype(Background)
     load_dtype(ObjectType, hierarchy_attr='supertype')
     load_dtype(ObjectDefinition)
     load_dtype(MobSize)
     load_dtype(Morphology, hierarchy_attr='base')
-    load_dtype(MobRace, hierarchy_attr='parents', multiple_inheritance=True, set_references={'parents': MobRace})
+    load_dtype(Race, hierarchy_attr='parents', multiple_inheritance=True, set_references={'parents': Race})
     load_dtype(Direction)
     load_areas()
     load_dtype(PlayerDefinition, rdef_attrs=['last_room'], ephemeral_attrs=['player']) # TODO: reference saved items? quests? spells?

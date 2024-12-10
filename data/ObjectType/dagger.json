@@ -1,0 +1,4 @@
+{
+	"name":"dagger",
+	"supertypes":["bladed_weapon","pointed_weapon"]
+}

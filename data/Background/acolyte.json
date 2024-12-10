@@ -1,0 +1,7 @@
+{
+	"name": "acolyte",
+	"description": "after some years ensconced within a holy order, you now seek your own path",
+	"attrs": {
+		"wis": {"min":11}
+	}
+}

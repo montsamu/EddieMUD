@@ -1,0 +1,4 @@
+{
+	"name":"ranged weapon",
+	"supertypes": ["weapon"]
+}

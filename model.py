@@ -1,6 +1,7 @@
 
 from datetime import datetime
 from copy import deepcopy
+from functools import partial
 import json
 import re
 import os
@@ -110,7 +111,7 @@ class Morphology(OnlineEditable, db.Entity):
     delta = Optional(Json, default={}) # can be base or deltas when loading? what about saving?!
     base = Optional('Morphology') # implies needing to load in dependency order...
     variants = Set('Morphology', lazy=True)
-    races = Set('MobRace', lazy=True)
+    races = Set('Race', lazy=True)
     @property
     def active_morphology(self):
         if self.base is None:
@@ -120,7 +121,7 @@ class Morphology(OnlineEditable, db.Entity):
 class MobSize(OnlineEditable, db.Entity):
     name = PrimaryKey(str) # tiny small medium large titan...
     value = Required(int)
-    races = Set('MobRace', lazy=True)
+    races = Set('Race', lazy=True)
 
 # TODO: permanent? categories?
 class MobFlag(OnlineEditable, db.Entity):
@@ -141,6 +142,7 @@ class SkillCategory(OnlineEditable, db.Entity):
     description = Optional(str)
     skills = Set('Skill') # non lazy is ok for finite list
 
+# TODO: min int/wis/con requirements?
 class Skill(OnlineEditable, db.Entity):
     name = PrimaryKey(str)
     category = Required('SkillCategory')
@@ -159,6 +161,7 @@ class Skill(OnlineEditable, db.Entity):
 #     spells = Set('Spell')
 
 # TODO: target type? program? targets?
+# TODO: min int/wis/con requirements?
 class Spell(OnlineEditable, db.Entity):
     name = PrimaryKey(str)
     books = Set('SpellBookItem', lazy=True)
@@ -218,17 +221,24 @@ class SpellBookItem(db.Entity):
     owner = Required('MobBaseDefinition')
     PrimaryKey(owner, spell)
 
-class MobRace(OnlineEditable, db.Entity):
+class Attribute(OnlineEditable, db.Entity):
+    name = PrimaryKey(str) # str agi dex int wis
+    lname = Required(str) # strength agility ...
+    description = Required(str)
+
+class Race(OnlineEditable, db.Entity):
     name = PrimaryKey(str) # elf dwarf troll half-dwarf
     description = Required(str)
-    parents = Set('MobRace', reverse='children')
-    children = Set('MobRace', reverse='parents')
+    parents = Set('Race', reverse='children')
+    children = Set('Race', reverse='parents')
     playable = Required(bool, default=False)
     corpse = Optional('ObjectDefinition')
     morphology = Required('Morphology')
     size = Required('MobSize')
     flags = Required(Json, default={})
-    races = Set('MobBaseDefinition', lazy=True)
+    mdefs = Set('MobBaseDefinition', lazy=True)
+    attrs = Required(Json, default={}) # base attrs for race
+    backgrounds = Set('Background')
 
     def descends_from(self, name):
         if self.name == name:
@@ -278,13 +288,14 @@ class MobBaseDefinition(OnlineEditable, db.Entity):
     title = Optional(str) # Sir, Captain
     metadata = Required(Json, default={}) # created_by, etc.
     created_at = Required(datetime, default=datetime.now)
-    race = Required('MobRace')
+    race = Required('Race')
     level = Required(int, default=1)
     experience = Required(int, default=0) # TODO: default in level_table for level?
     skillset = Set('SkillSetItem')
     spellbook = Set('SpellBookItem')
     bamfin = Required(str, default='appears.')
     bamfout = Required(str, default='disappears.')
+    attrs = Required(Json, default={}) # TODO: only as delta from Race?
 
 # archetypes of mobs, like "goblin raider" and "town guard" or unique Dragons etc.
 # TODO: mflag use_the?
@@ -320,11 +331,20 @@ class PlayerGuild(OnlineEditable, db.Entity):
     # TODO: fortress/etc.
     members = Set('PlayerDefinition', reverse='guild')
 
+# TODO: grant magic missle, revoke carnivore, etc.
+class Background(OnlineEditable, db.Entity):
+    name = PrimaryKey(str)
+    description = Required(str)
+    attrs = Required(Json, default={}) # map of attr_name to min/max: int map
+    races = Set('Race') # which races may choose this background
+    players = Set('PlayerDefinition', lazy=True) # all players who have chosen this background
+
 # save files for players
 class PlayerDefinition(MobBaseDefinition):
     mail = Optional(str)     # email for recovery
     password = Required(str) # base64-encoded, bcrypt salted first
     player = Optional('Player') # when online
+    background = Required('Background', default=partial(Background.get, name='farmer'))
     last_room = Optional('RoomDefinition')
     last_online = Required(datetime, default=datetime.now)
     guild = Optional('PlayerGuild', reverse='members')
@@ -340,8 +360,10 @@ class MobBase(ContainerBase):
     followers = Set('MobBase', reverse='leader')
     group = Optional(MobGroup, reverse='members')
     group_led = Optional(MobGroup, reverse='leader')
+    attrs = Required(Json, default={}) # active attributes?
 
 # active Mob in memory, one of many of its type
+# todo: players it hates because they already fought
 class Mob(MobBase):
     mdef = Required(MobDefinition) # goblin raider
     name = Optional(str)      # Jack
@@ -350,6 +372,7 @@ class Mob(MobBase):
     level = Optional(int) # override level to make slightly stronger/etc.
 
 # active Player in memory, unique!
+# TODO: mobs it is hated by because they already fought
 class Player(MobBase):
     pdef = Required(PlayerDefinition, unique=True)
     client_id = Required(str)
@@ -358,23 +381,24 @@ class Player(MobBase):
 # furniture, fixture, chest, building?
 class ObjectType(OnlineEditable, db.Entity):
     name = PrimaryKey(str)
-    supertype = Optional('ObjectType') # multiple supertypes so we can have a chair be a weapon and furniture?
+    supertypes = Set('ObjectType') # multiple supertypes so we can have melee_weapons, bladed_weapons, etc.
     subtypes = Set('ObjectType', lazy=True)
-    objects = Set('ObjectDefinition', lazy=True)
+    objects = Set('ObjectDefinition', lazy=True) # TODO should be called odefs?
     required_equipped_by = Set('ObjectRequirement', reverse='equipment_types', lazy=True)
     required_held_by = Set('ObjectRequirement', reverse='inventory_types', lazy=True)
     allowed_locations = Set('ObjectLocation', lazy=True)
 
+# TODO: unique?
 class ObjectDefinition(OnlineEditable, db.Entity):
     created_at = Required(datetime, default=datetime.now)
     # metadata: created_by = Optional('Player', reverse='created_objects')
     metadata = Required(Json, default={})
     name = Required(str, unique=True)
-    otype = Required('ObjectType')
-    objects = Set('Object', lazy=True)
+    otypes = Set('ObjectType') # a chair can be both a weapon and furniture and firewood?
+    objects = Set('Object', lazy=True) # all of the instantiated objects of this definition
     doors = Set('DoorDefinition', lazy=True) # for keys
     oresets = Set('ObjectReset', lazy=True)
-    corpse_of_race = Set('MobRace')
+    corpse_of_race = Set('Race')
     corpse_of_mob_definition = Set('MobDefinition')
     corpse_of_mob = Set('Mob') # this is not 'savable' as 'Mob' is ephemeral...
     consumed_by_spells = Set('SpellStep', reverse='reagents', lazy=True)
@@ -420,7 +444,7 @@ class ObjectReset(OnlineEditable, db.Entity):
 
 class MobReset(OnlineEditable, db.Entity):
     room = Required('RoomDefinition')
-    mdef = Required('MobDefinition') # todo: add ability to name, provide special weapons?
+    mdef = Required('MobDefinition') # todo: add ability to name, provide special weapons?, corpse, attrs, level, etc.
 
 class RoomFlag(OnlineEditable, db.Entity):
     name = PrimaryKey(str) # safe, pkill, ...

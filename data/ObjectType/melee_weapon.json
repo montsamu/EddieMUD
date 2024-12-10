@@ -1,0 +1,4 @@
+{
+	"name":"melee weapon",
+	"supertypes": ["weapon"]
+}

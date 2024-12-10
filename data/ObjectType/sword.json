@@ -1,0 +1,4 @@
+{
+	"name":"sword",
+	"supertypes":["bladed_weapon","pointed_weapon"]
+}

@@ -1,0 +1,7 @@
+{
+	"name": "soldier",
+	"description": "whether in battle or on the city watch, you have served your tour of duty and now seek your own way in the world",
+        "attrs": {
+                "str": {"min":11}
+        }
+}
