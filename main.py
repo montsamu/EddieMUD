@@ -13,7 +13,8 @@ import json5
 # import importlib
 from pony.orm import db_session, set_sql_debug, select
 
-def load_dtype_instance(dtype, dtype_json, set_references, rdef_attrs, ephemeral_attrs):
+def load_dtype_instance(dtype, dtype_json, set_references, rdef_attrs): # , ephemeral_attrs):
+    print("Loading dtype instance:", dtype_json)
     for k, v in set_references.items():
         if k in dtype_json:
             s = []
@@ -28,13 +29,17 @@ def load_dtype_instance(dtype, dtype_json, set_references, rdef_attrs, ephemeral
             print(rdef)
             dtype_json[k] = rdef
 
+    print("GETTING EPHEMERALS:", dtype)
+    ephemeral_attrs = dtype.ephemerals() if issubclass(dtype, HasEphemeral) else tuple()
+    print("EPHEMERALS:", ephemeral_attrs)
     for k in ephemeral_attrs:
-        del dtype_json[k]
+        if k in dtype_json:
+            del dtype_json[k]
     _dtype = dtype(**dtype_json)
     return _dtype
 
 # TODO refactor
-def load_dtype(dtype, hierarchy_attr=None, multiple_inheritance=False, set_references={}, rdef_attrs=[], ephemeral_attrs=[]):
+def load_dtype(dtype, hierarchy_attr=None, multiple_inheritance=False, set_references={}, rdef_attrs=[]): # , ephemeral_attrs=[]):
     with db_session:
 
         print(f"Loading: {dtype.__qualname__}")
@@ -52,7 +57,7 @@ def load_dtype(dtype, hierarchy_attr=None, multiple_inheritance=False, set_refer
                     print(f"Delaying: {dtype_json['name']}")
                     delayed_loads.append(dtype_json)
                 else:
-                    _dtype = load_dtype_instance(dtype, dtype_json, set_references, rdef_attrs, ephemeral_attrs)
+                    _dtype = load_dtype_instance(dtype, dtype_json, set_references, rdef_attrs) # , ephemeral_attrs)
                     loaded.add(_dtype.name)
                     print(f"Loaded: {_dtype.name}")
 
@@ -66,7 +71,7 @@ def load_dtype(dtype, hierarchy_attr=None, multiple_inheritance=False, set_refer
             else:
                 parent_set.add(delayed_load[hierarchy_attr])
             if parent_set.issubset(loaded):
-                _dtype = load_dtype_instance(dtype, delayed_load, set_references, rdef_attrs, ephemeral_attrs)
+                _dtype = load_dtype_instance(dtype, delayed_load, set_references, rdef_attrs) # , ephemeral_attrs)
                 loaded.add(_dtype.name)
                 print(f"Loaded: {_dtype.name}")
             else:
@@ -75,7 +80,7 @@ def load_dtype(dtype, hierarchy_attr=None, multiple_inheritance=False, set_refer
 
         for redelayed_load in redelayed_loads:
             print(f"Loading: {redelayed_load['name']}")
-            _dtype = load_dtype_instance(dtype, redelayed_load, set_references, rdef_attrs, ephemeral_attrs)
+            _dtype = load_dtype_instance(dtype, redelayed_load, set_references, rdef_attrs) # , ephemeral_attrs)
             loaded.add(_dtype.name)
             print(f"Loaded: {_dtype.name}")
 
@@ -116,16 +121,17 @@ if __name__=="__main__":
     db.bind('sqlite', ':memory:', create_db=True)
     db.generate_mapping(create_tables=True)
 
+    # TODO: can we infer any of these special cases, and/or PR to pony for it?
     load_dtype(Attribute)
     load_dtype(Background)
-    load_dtype(ObjectType, hierarchy_attr='supertype')
-    load_dtype(ObjectDefinition)
+    load_dtype(ObjectType, hierarchy_attr='supertypes', multiple_inheritance=True, set_references={'supertypes': ObjectType})
+    load_dtype(ObjectDefinition, set_references={'otypes': ObjectType})
     load_dtype(MobSize)
     load_dtype(Morphology, hierarchy_attr='base')
     load_dtype(Race, hierarchy_attr='parents', multiple_inheritance=True, set_references={'parents': Race})
     load_dtype(Direction)
     load_areas()
-    load_dtype(PlayerDefinition, rdef_attrs=['last_room'], ephemeral_attrs=['player']) # TODO: reference saved items? quests? spells?
+    load_dtype(PlayerDefinition, rdef_attrs=['last_room']) # , ephemeral_attrs=['player']) # TODO: reference saved items? quests? spells?
 
     # TODO: control order outside of code?
     for dtype in [

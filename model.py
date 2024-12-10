@@ -10,16 +10,36 @@ from pony.orm import Database, Required, Set, Optional, PrimaryKey, composite_ke
 db = Database()
 db._in_init_ = True
 
+# TODO: can we just figure this out by looking through the fields we are about to save and seeing if they are OnlineEditable?
+class Ephemeral:
+    """Mixin for defining a type as being entirely Ephemeral"""
+    pass
+
+class HasEphemeral:
+    """Mixin for defining a type as containing some ephemeral items"""
+    @classmethod
+    def ephemerals(cls):
+        excludes = []
+        for attr in cls._attrs_:
+            if issubclass(attr.py_type, Ephemeral):
+                excludes.append(attr.name)
+        return excludes
+
 # NOTE: when saving a player must also save their objects and pets, skillset and spellbook and prayerbook and songbook and runeset and cookbook and potionbook...
-class OnlineEditable(object):
+# TODO: somehow do NOT save ephemeral attrs like "Player" for PlayerDefinition, "Room" for RoomDef, etc.
+class OnlineEditable: # TODO rename Enduring? Persisted?
     """Mixin for defining entity hooks to persist in-memory entities to JSON"""
     def after_insert(self):
         if not self._database_._in_init_:
             print("storing",self,"to json...")
             # storing PlayerDefinition[2] to json...
+            # TODO: filter out ephemeral data
+            excludes = self.__class__.ephemerals() if issubclass(self.__class__, HasEphemeral) else tuple()
+            d = self.to_dict(exclude=excludes)
             with open(f'data/{self.__class__.__name__}/{self.get_pk()}.json', mode='x') as f:
-                json.dump(self.to_dict(), f, sort_keys=True, indent=4, default=str)
+                json.dump(d, f, sort_keys=True, indent=4, default=str)
     def after_update(self): # TODO: incremental update using TinyDB? log jsondeltas to stream?
+        # TODO: filter out ephemeral data and re-check for change if any
         print("updating",self,"to json...")
         with open(f'data/{self.__class__.__name__}/{self.get_pk()}.json', mode='w') as f:
             json.dump(self.to_dict(), f, sort_keys=True, indent=4, default=str)
@@ -27,11 +47,17 @@ class OnlineEditable(object):
         print("deleting",self,"from json...")
         os.remove(f'data/{self.__class__.__name__}/{self.get_pk()}.json') # TODO: stash in recycle bin instead?!
 
-class ContainerBase(db.Entity):
+class DisplayNamed:
+    """Mixin for defining entity hooks to provide display name default"""
+    def before_insert(self):
+        if not self.display_name:
+            self.display_name = self.name.replace("_"," ")
+
+class ContainerBase(HasEphemeral, db.Entity):
     """Base entity type for entities which contain an inventory of instantiated objects"""
     inventory = Set('Object')
 
-class MobGroup(db.Entity):
+class MobGroup(Ephemeral, db.Entity):
     """Ephemeral group of mobs/players"""
     leader = Required('MobBase')
     members = Set('MobBase')
@@ -124,27 +150,36 @@ class MobSize(OnlineEditable, db.Entity):
     races = Set('Race', lazy=True)
 
 # TODO: permanent? categories?
-class MobFlag(OnlineEditable, db.Entity):
+class MobFlag(DisplayNamed, OnlineEditable, db.Entity):
     name = PrimaryKey(str) # sentinel, aggro...
+    display_name = Optional(str, unique=True)
     description = Optional(str)
     default = Required(bool, default=False)
 
 # TODO: beneficial? permanent? categories?
-class MobEffect(OnlineEditable, db.Entity):
+class MobEffect(HasEphemeral, DisplayNamed, OnlineEditable, db.Entity):
     name = PrimaryKey(str) # fire_shield, rage, detect_evil...
+    display_name = Optional(str, unique=True)
     description = Optional(str)
+    spells = Set('Spell', lazy=True)
+    tattoos = Set('Tattoo', lazy=True)
+    objects = Set('ObjectDefinition', lazy=True)
     mobdefs = Set('MobDefinition', lazy=True)
     mobs = Set('MobBase', lazy=True)
-    spells = Set('Spell', lazy=True)
+    mresets = Set('MobReset', lazy=True)
+    @classmethod
+    def ephemerals(cls):
+        return ['mobs']
 
 class SkillCategory(OnlineEditable, db.Entity):
     name = Required(str, unique=True)
     description = Optional(str)
-    skills = Set('Skill') # non lazy is ok for finite list
+    skills = Set('Skill', lazy=True) # non lazy is probably ok for finite list
 
 # TODO: min int/wis/con requirements?
 class Skill(OnlineEditable, db.Entity):
     name = PrimaryKey(str)
+    display_name = Optional(str, unique=True)
     category = Required('SkillCategory')
     sets = Set('SkillSetItem', lazy=True)
     description = Optional(str)
@@ -153,6 +188,9 @@ class Skill(OnlineEditable, db.Entity):
     base_energy_cost = Required(int, default=1)
     base_speed = Required(int, default=100)
     trainers = Set('MobDefinition')
+    # @property
+    # def display_name(self):
+    #     return self.display_name if self.display_name else self.name.replace("_"," ")
 
 # TODO: would some cats be evil, or things like fire/cold? or: arcane/demonic/angelic/spiritual?
 # class SpellCategory(OnlineEditable, db.Entity):
@@ -222,9 +260,12 @@ class SpellBookItem(db.Entity):
     PrimaryKey(owner, spell)
 
 class Attribute(OnlineEditable, db.Entity):
-    name = PrimaryKey(str) # str agi dex int wis
-    lname = Required(str) # strength agility ...
+    name = PrimaryKey(str) # strength agility dexterity ...
+    abbreviation = Optional(str, unique=True) # str agi dex int wis lux
     description = Required(str)
+    def before_insert(self):
+        if not self.abbreviation:
+            self.abbreviation = self.name[:3]
 
 class Race(OnlineEditable, db.Entity):
     name = PrimaryKey(str) # elf dwarf troll half-dwarf
@@ -270,14 +311,24 @@ class Race(OnlineEditable, db.Entity):
         return self.descends_from("demon")
 
 # TODO: leader
-class MobClan(OnlineEditable, db.Entity):
+class MobClan(HasEphemeral, OnlineEditable, db.Entity):
     name = Required(str, unique=True)
-    members = Set('MobDefinition')
+    member_defs = Set('MobDefinition', lazy=True)
+    member_resets = Set('MobReset', lazy=True)
+    members = Set('Mob', lazy=True)
+    @classmethod
+    def ephemerals(cls):
+        return ('members',)
 
 # TODO: leader
-class MobNation(OnlineEditable, db.Entity):
+class MobNation(HasEphemeral, OnlineEditable, db.Entity):
     name = Required(str, unique=True)
-    members = Set('MobDefinition')
+    member_defs = Set('MobDefinition', lazy=True)
+    member_resets = Set('MobReset', lazy=True)
+    members = Set('Mob', lazy=True)
+    @classmethod
+    def ephemerals(cls):
+        return ('members',)
 
 # TODO: vows, curses, religions, blessings...
 # prayer points...
@@ -296,10 +347,11 @@ class MobBaseDefinition(OnlineEditable, db.Entity):
     bamfin = Required(str, default='appears.')
     bamfout = Required(str, default='disappears.')
     attrs = Required(Json, default={}) # TODO: only as delta from Race?
+    delta = Required(Json, default={}) # delta morphology, for piercings, amputations, etc.
 
 # archetypes of mobs, like "goblin raider" and "town guard" or unique Dragons etc.
 # TODO: mflag use_the?
-class MobDefinition(MobBaseDefinition):
+class MobDefinition(HasEphemeral, MobBaseDefinition):
     plural = Required(str, unique=True)   # TODO: default with name+s
     # metadata: created_by = Optional('Player', reverse='created_mobs')
     mflags = Required(Json, default={})  # the default flags on load
@@ -309,12 +361,15 @@ class MobDefinition(MobBaseDefinition):
     mobs = Set('Mob', lazy=True)     # instances of this mob definition
     # TODO: equipment/inventory resets
     mresets = Set('MobReset', lazy=True) # where this mob resets
-    clan = Optional('MobClan')
     unique = Required(bool, default=False)
+    clan = Optional('MobClan')
     nation = Optional('MobNation')
     spells_trained = Set('Spell')
     skills_trained = Set('Skill')
     corpse = Optional('ObjectDefinition') # overrides race default corpse, if any
+    @classmethod
+    def ephemerals(cls):
+        return ('mobs',) # TODO revisit if MobBaseDefinition becomes HasEphemeral
 
 # TODO: treasure tables
 # TODO: social tables
@@ -334,13 +389,17 @@ class PlayerGuild(OnlineEditable, db.Entity):
 # TODO: grant magic missle, revoke carnivore, etc.
 class Background(OnlineEditable, db.Entity):
     name = PrimaryKey(str)
+    display_name = Optional(str, unique=True)
     description = Required(str)
     attrs = Required(Json, default={}) # map of attr_name to min/max: int map
     races = Set('Race') # which races may choose this background
     players = Set('PlayerDefinition', lazy=True) # all players who have chosen this background
+    # @property
+    # def display_name(self):
+    #     return sdisplay_elf.display_name if self.display_name else self.name.replace("_"," ")
 
 # save files for players
-class PlayerDefinition(MobBaseDefinition):
+class PlayerDefinition(HasEphemeral, MobBaseDefinition):
     mail = Optional(str)     # email for recovery
     password = Required(str) # base64-encoded, bcrypt salted first
     player = Optional('Player') # when online
@@ -350,9 +409,14 @@ class PlayerDefinition(MobBaseDefinition):
     guild = Optional('PlayerGuild', reverse='members')
     known = Set('PlayerDefinition', reverse='known_by')
     known_by = Set('PlayerDefinition', reverse='known')
+    tattoos = Set('Tattoo', reverse='players')
+    @classmethod
+    def ephemerals(cls):
+        print("EPHEMERALS CALLED")
+        return ('player',) # TODO revisit if MobBaseDefinition becomes HasEphemeral
 
 # base for active Mob/Player in memory
-class MobBase(ContainerBase):
+class MobBase(Ephemeral, ContainerBase):
     mflags = Required(Json, default={}) # active flags
     effects = Set('MobEffect') # active effects
     room = Required('Room')
@@ -370,6 +434,21 @@ class Mob(MobBase):
     title = Optional(str)     # Sir
     corpse = Optional('ObjectDefinition') # overrides mdef default corpse, if any
     level = Optional(int) # override level to make slightly stronger/etc.
+    delta = Required(Json, default={}) # delta morphology, for piercings, amputations, etc.
+    tattoos = Set('Tattoo', reverse='mobs')
+    clan = Optional('MobClan')
+    nation = Optional('MobNation')
+    mreset = Optional('MobReset') # which reset loaded this mob, if any
+
+# TODO: base cost, skill?
+class Tattoo(HasEphemeral, OnlineEditable, db.Entity):
+    name = Required(str, unique=True)
+    effects = Set('MobEffect') # active effects
+    players = Set('PlayerDefinition', lazy=True)
+    mobs = Set('Mob', lazy=True)
+    @classmethod
+    def ephemerals(cls):
+        return ('mobs',)
 
 # active Player in memory, unique!
 # TODO: mobs it is hated by because they already fought
@@ -381,15 +460,20 @@ class Player(MobBase):
 # furniture, fixture, chest, building?
 class ObjectType(OnlineEditable, db.Entity):
     name = PrimaryKey(str)
+    display_name = Optional(str, unique=True)
     supertypes = Set('ObjectType') # multiple supertypes so we can have melee_weapons, bladed_weapons, etc.
     subtypes = Set('ObjectType', lazy=True)
     objects = Set('ObjectDefinition', lazy=True) # TODO should be called odefs?
     required_equipped_by = Set('ObjectRequirement', reverse='equipment_types', lazy=True)
     required_held_by = Set('ObjectRequirement', reverse='inventory_types', lazy=True)
     allowed_locations = Set('ObjectLocation', lazy=True)
+    attrs = Required(Json, default={})
+    # @property
+    # def display_name(self):
+    #     return self.display_name if self.display_name else self.name.replace("_"," ")
 
 # TODO: unique?
-class ObjectDefinition(OnlineEditable, db.Entity):
+class ObjectDefinition(HasEphemeral, OnlineEditable, db.Entity):
     created_at = Required(datetime, default=datetime.now)
     # metadata: created_by = Optional('Player', reverse='created_objects')
     metadata = Required(Json, default={})
@@ -398,21 +482,28 @@ class ObjectDefinition(OnlineEditable, db.Entity):
     objects = Set('Object', lazy=True) # all of the instantiated objects of this definition
     doors = Set('DoorDefinition', lazy=True) # for keys
     oresets = Set('ObjectReset', lazy=True)
-    corpse_of_race = Set('Race')
-    corpse_of_mob_definition = Set('MobDefinition')
-    corpse_of_mob = Set('Mob') # this is not 'savable' as 'Mob' is ephemeral...
+    effects = Set('MobEffect')
+    corpse_of_races = Set('Race')
+    corpse_of_mob_definitions = Set('MobDefinition', lazy=True)
+    corpse_of_mob_resets = Set('MobReset', lazy=True)
+    corpse_of_mobs = Set('Mob') # this is not 'savable' as 'Mob' is ephemeral...
     consumed_by_spells = Set('SpellStep', reverse='reagents', lazy=True)
     consumed_by_skills = Set('SkillStep', reverse='ingredients', lazy=True)
     produced_by_spells = Set('SpellStep', reverse='products', lazy=True)
     produced_by_skills = Set('SkillStep', reverse='products', lazy=True)
     required_equipped_by = Set('ObjectRequirement', reverse='equipment', lazy=True)
     required_held_by = Set('ObjectRequirement', reverse='inventory', lazy=True)
+    attrs = Required(Json, default={})
+    @classmethod
+    def ephemerals(cls):
+        return ('corpse_of_mobs', 'objects')
 
 # active Object in memory
-class Object(ContainerBase):
+class Object(Ephemeral, ContainerBase):
     odef = Required(ObjectDefinition)
     owner = Required(ContainerBase)
     location = Optional(str)
+    oreset = Optional('ObjectReset') # which reset loaded this mob, if any; TODO action, player loaded, etc.
 
 class ObjectLocation(OnlineEditable, db.Entity):
     name = PrimaryKey(str) # right_arm, torso, horn...
@@ -425,32 +516,50 @@ class AreaFlag(OnlineEditable, db.Entity):
     name = PrimaryKey(str) # open
     default = Required(bool)
 
-class AreaDefinition(OnlineEditable, db.Entity):
+class AreaDefinition(HasEphemeral, OnlineEditable, db.Entity):
     name = Required(str, unique=True)
     area = Optional('Area') # , unique=True) # CAUSED ERROR!
     metadata = Required(Json, default={}) # created_by...
     rdefs = Set('RoomDefinition')
     aflagdefs = Required(Json, default={}) # todo: check insert/update for existence using py_check function
+    @classmethod
+    def ephemerals(cls):
+        return ('area',)
 
 # active Area loaded
-class Area(db.Entity):
+class Area(Ephemeral, db.Entity):
     adef = Required(AreaDefinition, unique=True)
     rooms = Set('Room') # active rooms
     aflags = Required(Json, default={}) # active area flags, not persisted
 
-class ObjectReset(OnlineEditable, db.Entity):
+# TODO: reset a special version of an object, or even something like a LIT torch, etc.
+class ObjectReset(HasEphemeral, OnlineEditable, db.Entity):
     room = Required('RoomDefinition')
     odef = Required('ObjectDefinition')
+    obj = Optional('Object') # the object loaded by this oreset, if any
+    @classmethod
+    def ephemerals(cls):
+        return ('obj',)
 
-class MobReset(OnlineEditable, db.Entity):
+class MobReset(HasEphemeral, OnlineEditable, db.Entity):
     room = Required('RoomDefinition')
-    mdef = Required('MobDefinition') # todo: add ability to name, provide special weapons?, corpse, attrs, level, etc.
+    mdef = Required('MobDefinition') # todo: add ability to provide special weapons?, attrs, level, etc.
+    name = Optional(str) # special unique name for this mob
+    effects = Set('MobEffect') # special effects for this mob
+    corpse = Optional('ObjectDefinition') # special corpse for this mob
+    nation = Optional('MobNation') # special nation for this mob
+    clan = Optional('MobClan') # special clan for this mob
+    mob = Optional('Mob')
+    # TODO: special reputation? skills/spells trained? or leave that to special mobdefs
+    @classmethod
+    def ephemerals(cls):
+        return ('mob',)
 
 class RoomFlag(OnlineEditable, db.Entity):
     name = PrimaryKey(str) # safe, pkill, ...
     default = Required(bool, default=False)
 
-class RoomDefinition(OnlineEditable, db.Entity):
+class RoomDefinition(HasEphemeral, OnlineEditable, db.Entity):
     id = Required(int)
     adef = Required(AreaDefinition)
     room = Optional('Room') # , unique=True) # CAUSED ERROR!
@@ -462,8 +571,11 @@ class RoomDefinition(OnlineEditable, db.Entity):
     mresets = Set('MobReset') # todo: json?
     last_players = Set('PlayerDefinition', lazy=True) # players last seen in this room, for relog
     PrimaryKey(adef, id)
+    @classmethod
+    def ephemerals(cls):
+        return ('room',)
 
-class Room(ContainerBase):
+class Room(Ephemeral, ContainerBase):
     area = Required('Area')
     rdef = Required(RoomDefinition, unique=True)
     doors = Set('Door')
@@ -501,7 +613,7 @@ class Direction(OnlineEditable, db.Entity):
     # doors_leading = Set('Door', lazy=True)
     # TODO: opposite?
 
-class DoorDefinition(OnlineEditable, db.Entity):
+class DoorDefinition(HasEphemeral, OnlineEditable, db.Entity):
     room = Required('RoomDefinition')
     door = Optional('Door') # , unique=True) # CAUSED ERROR
     direction = Required(Direction) # Direction todo: check insert/update for existence
@@ -509,8 +621,11 @@ class DoorDefinition(OnlineEditable, db.Entity):
     dflagdefs = Required(Json, default={}) # todo: check insert/update for dflag existence
     key = Optional('ObjectDefinition')
     composite_key(room, direction)
+    @classmethod
+    def ephemerals(cls):
+        return ('door',)
 
-class Door(db.Entity):
+class Door(Ephemeral, db.Entity): # ephemeral door instance in memory
     ddef = Required('DoorDefinition', unique=True)
     room = Required('Room')
     dflags = Required(Json, default={}) # active ephemeral flags? i.e. unlocked

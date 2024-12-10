@@ -1,4 +1,9 @@
 {
 	"name":"bladed weapon",
-	"supertypes": ["melee weapon"]
+	"supertypes": ["melee weapon"],
+	"attrs": {
+		"slash damage": {
+			"type": "dmgdice"
+		}
+	}
 }

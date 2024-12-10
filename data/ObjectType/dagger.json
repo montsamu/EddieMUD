@@ -1,4 +1,4 @@
 {
 	"name":"dagger",
-	"supertypes":["bladed_weapon","pointed_weapon"]
+	"supertypes":["bladed weapon","pointed weapon"]
 }

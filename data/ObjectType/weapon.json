@@ -1,3 +1,23 @@
 {
-	"name": "weapon"
+	"name": "weapon",
+	"attrs": {
+		"hitdice": {
+			"type": "int"
+		},
+		"damdice": {
+			"type": "int"
+		},
+		"primary_attr": {
+			"type": "Attribute"
+		},
+		"secondary_attr": {
+			"type": "Attribute"
+		},
+		"primary_skill": {
+			"type": "Skill"
+		},
+		"secondary_skill": {
+			"type": "Skill"
+		}
+	}
 }
