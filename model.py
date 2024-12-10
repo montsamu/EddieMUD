@@ -2,6 +2,7 @@
 from datetime import datetime
 from copy import deepcopy
 from functools import partial
+from typing import Any, Dict, List, Tuple
 import json
 import re
 import os
@@ -17,19 +18,27 @@ class Ephemeral:
 
 class HasEphemeral:
     """Mixin for defining a type as containing some ephemeral items"""
+    _attrs_ = None # makes pytype happy
     @classmethod
-    def ephemerals(cls):
+    def ephemerals(cls) -> Tuple:
         excludes = []
         for attr in cls._attrs_:
             if issubclass(attr.py_type, Ephemeral):
                 excludes.append(attr.name)
-        return excludes
+        return tuple(excludes)
 
 # NOTE: when saving a player must also save their objects and pets, skillset and spellbook and prayerbook and songbook and runeset and cookbook and potionbook...
 # TODO: somehow do NOT save ephemeral attrs like "Player" for PlayerDefinition, "Room" for RoomDef, etc.
 class OnlineEditable: # TODO rename Enduring? Persisted?
     """Mixin for defining entity hooks to persist in-memory entities to JSON"""
-    def after_insert(self):
+    _database_ = None # makes pytype happy
+    def get_pk(self) -> Any: # makes pytype happy
+        return None
+    def to_dict(self, exclude: Tuple) -> Dict: # makes pytype happy
+        return {}
+    _attrs_ = None # makes pytype happy
+
+    def after_insert(self: db.Entity):
         if not self._database_._in_init_:
             print("storing",self,"to json...")
             # storing PlayerDefinition[2] to json...
@@ -38,22 +47,28 @@ class OnlineEditable: # TODO rename Enduring? Persisted?
             d = self.to_dict(exclude=excludes)
             with open(f'data/{self.__class__.__name__}/{self.get_pk()}.json', mode='x') as f:
                 json.dump(d, f, sort_keys=True, indent=4, default=str)
-    def after_update(self): # TODO: incremental update using TinyDB? log jsondeltas to stream?
+    def after_update(self: db.Entity): # TODO: incremental update using TinyDB? log jsondeltas to stream?
         # TODO: filter out ephemeral data and re-check for change if any
         print("updating",self,"to json...")
+        excludes = self.__class__.ephemerals() if issubclass(self.__class__, HasEphemeral) else tuple()
+        d = self.to_dict(exclude=excludes)
         with open(f'data/{self.__class__.__name__}/{self.get_pk()}.json', mode='w') as f:
-            json.dump(self.to_dict(), f, sort_keys=True, indent=4, default=str)
-    def after_delete(self):
+            json.dump(d, f, sort_keys=True, indent=4, default=str)
+    def after_delete(self: db.Entity):
         print("deleting",self,"from json...")
         os.remove(f'data/{self.__class__.__name__}/{self.get_pk()}.json') # TODO: stash in recycle bin instead?!
 
 class DisplayNamed:
+    name = None
+    display_name = None
     """Mixin for defining entity hooks to provide display name default"""
     def before_insert(self):
         if not self.display_name:
             self.display_name = self.name.replace("_"," ")
 
-class HasPlural:
+class HasPluralUniqueName:
+    name = None
+    plural = None
     """Mixin for definition entity hooks to provide plural default"""
     def before_insert(self):
         if not self.plural:
